@@ -18,6 +18,18 @@ export function currentStudent(request: Request): Student | null {
   return db.students.find((s) => s.id === userId) ?? null;
 }
 
+/**
+ * Гейт роли curator для `/students`, `/groups`, `/teachers`, `/notes`,
+ * `/curator/*` — эти эндпоинты не про конкретного пользователя (как `/me/*`),
+ * а про роль. Возвращает `Response`, если запрос не от куратора, иначе `null`.
+ */
+export function requireCurator(request: Request): Response | null {
+  const userId = userIdFromAuthHeader(request.headers.get("Authorization"));
+  if (!userId) return unauthorized();
+  if (userId !== db.curator.id) return forbidden();
+  return null;
+}
+
 export function unauthorized(message = "Не авторизован") {
   return HttpResponse.json({ statusCode: 401, error: "Unauthorized", message }, { status: 401 });
 }
@@ -28,6 +40,10 @@ export function forbidden(message = "Доступ запрещён") {
 
 export function notFound(message = "Не найдено") {
   return HttpResponse.json({ statusCode: 404, error: "Not Found", message }, { status: 404 });
+}
+
+export function badRequest(message: string) {
+  return HttpResponse.json({ statusCode: 400, error: "Bad Request", message }, { status: 400 });
 }
 
 /**

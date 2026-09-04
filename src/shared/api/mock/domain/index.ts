@@ -20,3 +20,19 @@ export {
   type WeekDayAgenda,
   type WeekPlanDay,
 } from "./schedule";
+export { filterStudents, idleActiveStudents, type StudentsQuery } from "./students";
+export { attentionBuckets, type AttentionBuckets } from "./attention";
+export {
+  groupStage,
+  teacherOf,
+  groupOf,
+  studentsInGroup,
+  groupIsFull,
+  groupHealth,
+  idleBucketOf,
+  groupWeekSchedule,
+  teacherGroupConflict,
+  findMatchingGroup,
+  type GroupStage,
+  type GroupHealth,
+} from "./groups";

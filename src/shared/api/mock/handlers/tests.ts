@@ -73,7 +73,7 @@ function ensureFresh(attempt: TestAttempt, test: LessonTest) {
 }
 
 export const testsHandlers: HttpHandler[] = [
-  http.get("*/me/tests/:order", ({ request, params }) => {
+  http.get("*/me/tests/:order([^./]+)", ({ request, params }) => {
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
@@ -188,7 +188,7 @@ export const testsHandlers: HttpHandler[] = [
     return HttpResponse.json(attemptDto(attempt, test));
   }),
 
-  http.get("*/me/attempts/:id", ({ request, params }) => {
+  http.get("*/me/attempts/:id([^./]+)", ({ request, params }) => {
     const student = currentStudent(request);
     if (!student) return unauthorized();
 

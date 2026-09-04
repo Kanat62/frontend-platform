@@ -7,3 +7,4 @@ export { SectionTitle } from "./section-title";
 export { EmptyState } from "./empty-state";
 export { Avatar } from "./avatar";
 export { VideoPlayer } from "./video-player";
+export { LangPill } from "./lang-pill";

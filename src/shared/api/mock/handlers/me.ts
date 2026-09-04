@@ -179,7 +179,7 @@ export const meHandlers: HttpHandler[] = [
     return HttpResponse.json(response);
   }),
 
-  http.get("*/me/lessons/:order", ({ request, params }) => {
+  http.get("*/me/lessons/:order([^./]+)", ({ request, params }) => {
     const student = currentStudent(request);
     if (!student) return unauthorized();
 

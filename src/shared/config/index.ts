@@ -6,4 +6,6 @@ export {
   SCHOOL_TZ,
   LESSON_COUNT,
   TODAY,
+  WEEK_RHYTHM,
+  type DayKind,
 } from "./constants";

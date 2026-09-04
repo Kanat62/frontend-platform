@@ -1,11 +1,15 @@
-// TODO(FRONTEND.md §16, шаг 5): экран «Карточка ученика» — заглушка каркаса (шаг 1).
+import { useParams } from "react-router";
+import { Lock } from "lucide-react";
+import { EmptyState } from "@/shared/ui";
+import { StudentCard } from "@/widgets/student-card";
+
+// Порт curator.students.$id.tsx (composition + чтение params).
 export function StudentDetailPage() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 p-10 text-center">
-      <div>
-        <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Карточка ученика</p>
-        <p className="mt-1 text-xs text-muted-foreground">Экран в разработке.</p>
-      </div>
-    </div>
-  );
+  const { id } = useParams<{ id: string }>();
+
+  if (!id) {
+    return <EmptyState icon={Lock} title="Ученик не найден" description="Проверьте ссылку или вернитесь к списку." />;
+  }
+
+  return <StudentCard studentId={id} />;
 }

@@ -1,4 +1,4 @@
-import { TODAY } from "@/shared/config";
+import { TODAY, WEEK_RHYTHM, type DayKind } from "@/shared/config";
 import type { Dto } from "@/shared/api";
 
 /**
@@ -8,8 +8,7 @@ import type { Dto } from "@/shared/api";
  * «раскладка недели, подсветка сегодня» остаётся на фронте).
  */
 
-export const WEEK_RHYTHM = ["theory", "practice", "theory", "practice", "theory", "practice", "rest"] as const;
-export type DayKind = (typeof WEEK_RHYTHM)[number];
+export type { DayKind };
 export type DayMarkStatus = "done" | "absent" | "today" | "upcoming" | "rest";
 
 export function dayState(

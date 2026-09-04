@@ -1,5 +1,5 @@
 export { apiClient, request, type RequestOptions } from "./client";
-export { qk } from "./queryKeys";
+export { qk, type StudentFilters } from "./queryKeys";
 export type {
   components,
   Dto,
@@ -19,4 +19,7 @@ export type {
   QuestionType,
   AttemptStatus,
   TestLockedReason,
+  GroupStatus,
+  TeacherStatus,
+  PaymentStatus,
 } from "./schema";

@@ -4,8 +4,8 @@ import { paths } from "@/shared/config";
 import { formatFull } from "@/shared/lib";
 import { Avatar, SectionTitle } from "@/shared/ui";
 import { useLogoutMutation } from "@/features/auth";
+import { AccessPill } from "@/entities/student";
 import { useProfileQuery } from "../api/queries";
-import { AccessPill } from "./AccessPill";
 
 // Порт ProfilePage из english-flow/src/routes/profile.tsx.
 export function StudentProfile() {

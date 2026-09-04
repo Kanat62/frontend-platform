@@ -23,6 +23,9 @@ export type QuestionType = "single" | "multiple";
 export type AttemptStatus = "in_progress" | "submitted";
 /** Причина, по которой тест заблокирован — считается на сервере (FRONTEND.md §7). */
 export type TestLockedReason = "lesson_not_completed" | "not_published";
+export type GroupStatus = "recruiting" | "active" | "finished" | "archived";
+export type TeacherStatus = "active" | "absent" | "replacement";
+export type PaymentStatus = "full" | "partial" | "unpaid";
 
 export interface components {
   schemas: {
@@ -280,6 +283,323 @@ export interface components {
           answers: Record<string, string[]>;
           questions: components["schemas"]["TestQuestionReviewDto"][];
         };
+
+    /* ---------- куратор: ученики/группы (BACKEND.md §12 students/progress/groups/notes/dashboard) ---------- */
+
+    PaymentInfoDto: {
+      status: PaymentStatus;
+      paid: number;
+      total: number;
+      currency: string;
+      remaining: number;
+      purchaseDate: string;
+    };
+
+    /** Строка `/students` — таблица (BACKEND.md: список с фильтрами + пагинация). */
+    StudentListItemDto: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      avatarTone: string;
+      login: string;
+      phone: string;
+      language: LanguageCode;
+      type: CourseType;
+      productTitle: string;
+      groupCode: string | null;
+      groupName: string | null;
+      startDate: string;
+      endDate: string;
+      currentLessonOrder: number;
+      lessonsTotal: number;
+      progressPct: number;
+      payment: components["schemas"]["PaymentInfoDto"];
+      lastActivity: string;
+      accessStatus: AccessStatus;
+    };
+
+    StudentsListDto: {
+      items: components["schemas"]["StudentListItemDto"][];
+      total: number;
+      page: number;
+      pageSize: number;
+    };
+
+    /** `GET /students/:id` — шапка карточки, общая для всех 6 вкладок. */
+    StudentHeaderDto: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      avatarTone: string;
+      language: LanguageCode;
+      type: CourseType;
+      accessStatus: AccessStatus;
+      status: AccessStatus;
+      daysLeft: number;
+      endDate: string;
+      lastActivity: string;
+      currentLessonOrder: number;
+      openedUpTo: number;
+      lessonsTotal: number;
+      progressPct: number;
+      onboarded: boolean;
+      nextMeeting?: { date: string; startTime: string };
+    };
+
+    /** `GET /students/:id/overview` — «кто и что купил» + «где учится». */
+    StudentOverviewDto: {
+      login: string;
+      phone: string;
+      age: number | null;
+      city: string;
+      managerName: string;
+      productTitle: string;
+      productPrice: number;
+      productCurrency: string;
+      startDate: string;
+      endDate: string;
+      payment: components["schemas"]["PaymentInfoDto"];
+      group: { id: string; name: string } | null;
+      groupRequired: boolean;
+      teacherName: string | null;
+    };
+
+    StudentLearningLessonDto: {
+      order: number;
+      title: string;
+      state: LessonState;
+    };
+
+    /** `GET /students/:id/learning`. */
+    StudentLearningDto: {
+      level: CefrLevel;
+      month: number;
+      currentLessonOrder: number;
+      openedUpTo: number;
+      completedCount: number;
+      testsPassed: number;
+      testsTotal: number;
+      lessons: components["schemas"]["StudentLearningLessonDto"][];
+    };
+
+    /** Строка практики — используется и в карточке ученика, и в группе, и в дашборде. */
+    StudentMeetingDto: {
+      id: string;
+      title: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      meetUrl: string;
+      status: MeetingStatus;
+      /** Только для `status: "completed"` — присутствовал ли этот ученик. */
+      attended?: boolean;
+    };
+
+    /** `GET /students/:id/practice`. */
+    StudentPracticeDto: {
+      total: number;
+      attended: number;
+      nextMeetingDate?: string;
+      meetings: components["schemas"]["StudentMeetingDto"][];
+    };
+
+    /** `GET /students/:id/progress`. */
+    StudentProgressDto: {
+      completedCount: number;
+      lessonsTotal: number;
+      progressPct: number;
+      testsPassed: number;
+      testsTotal: number;
+      practiceAttended: number;
+      practiceTotal: number;
+      streakDays: number;
+    };
+
+    NoteDto: {
+      id: string;
+      author: string;
+      content: string;
+      createdAt: string;
+    };
+
+    AddNoteRequestDto: {
+      content: string;
+    };
+
+    CreateStudentRequestDto: {
+      firstName: string;
+      lastName: string;
+      age: number | null;
+      city: string;
+      phone: string;
+      login: string;
+      language: LanguageCode;
+      type: CourseType;
+      startDate: string;
+      practiceStart: string;
+      groupId: string | null;
+      manager: string;
+      total: number | null;
+      paid: number | null;
+    };
+
+    /** Пароль отдаётся один раз в ответе на создание — TЗ (куратор не может его увидеть снова). */
+    CreateStudentResponseDto: {
+      id: string;
+      login: string;
+      password: string;
+      groupName: string | null;
+    };
+
+    BulkUpdateStudentsRequestDto: {
+      ids: string[];
+      patch: {
+        groupId?: string | null;
+        teacherId?: string | null;
+        status?: AccessStatus;
+      };
+    };
+
+    UpdateStudentRequestDto: {
+      phone?: string;
+      city?: string;
+      age?: number | null;
+      managerName?: string;
+      onboarded?: boolean;
+      payment?: { total: number; paid: number };
+    };
+
+    UpdateStudentAccessRequestDto: {
+      status?: AccessStatus;
+      endDate?: string;
+    };
+
+    UpdateStudentGroupRequestDto: {
+      groupId: string | null;
+    };
+
+    OpenCloseLessonRequestDto: {
+      order: number;
+    };
+
+    /** Строка `/groups` — карточка списка. */
+    GroupSummaryDto: {
+      id: string;
+      code: string;
+      name: string;
+      language: LanguageCode;
+      status: GroupStatus;
+      startDate: string;
+      endDate: string;
+      practiceStart: string;
+      practiceEnd: string;
+      studentCount: number;
+      maxStudents: number;
+      teacherId: string | null;
+      teacherName: string | null;
+      teacherTone: string | null;
+      hasMeetUrl: boolean;
+      month: number;
+      level: CefrLevel;
+      lessonOrder: number;
+    };
+
+    GroupsListDto: {
+      items: components["schemas"]["GroupSummaryDto"][];
+      byLanguage: { code: LanguageCode; name: string; count: number }[];
+    };
+
+    GroupWeekDayDto: {
+      day: string;
+      kind: WeekPlanKind;
+      time: string;
+    };
+
+    GroupRosterItemDto: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      avatarTone: string;
+      currentLessonOrder: number;
+      progressPct: number;
+      lastActivity: string;
+      accessStatus: AccessStatus;
+      /** Здоровье именно этого ученика в группе — "at_risk"/"inactive" при бездействии (SS7.1 groupHealth). */
+      idleBucket: "active" | "at_risk" | "inactive";
+    };
+
+    /** `GET /groups/:id`. */
+    GroupDetailDto: components["schemas"]["GroupSummaryDto"] & {
+      topic: string;
+      currentLesson: number;
+      meetUrl: string;
+      health: { total: number; active: number; atRisk: number; inactive: number };
+      weekSchedule: components["schemas"]["GroupWeekDayDto"][];
+      recentMeetings: components["schemas"]["StudentMeetingDto"][];
+      roster: components["schemas"]["GroupRosterItemDto"][];
+    };
+
+    CreateGroupRequestDto: {
+      language: LanguageCode;
+      startDate: string;
+      practiceStart: string;
+      practiceEnd: string;
+      teacherId: string | null;
+      maxStudents: number;
+    };
+
+    UpdateGroupRequestDto: {
+      status?: GroupStatus;
+      meetUrl?: string;
+      maxStudents?: number;
+    };
+
+    AssignTeacherRequestDto: {
+      teacherId: string | null;
+    };
+
+    ScheduleGroupMeetingRequestDto: {
+      date: string;
+      meetUrl?: string;
+    };
+
+    /**
+     * `GET /lessons` — минимальный каталог (order/title/block) для
+     * group-detail («Доступ к урокам»). Поля расширятся в шаге 6, когда
+     * появится полноценный `lesson-catalog`/`lesson-editor` (описание,
+     * видео, метка «есть практика» — BACKEND.md §12).
+     */
+    LessonCatalogItemDto: {
+      order: number;
+      title: string;
+      block: string;
+    };
+
+    TeacherOptionDto: {
+      id: string;
+      name: string;
+      languages: LanguageCode[];
+      status: TeacherStatus;
+    };
+
+    /** `GET /curator/dashboard`. */
+    CuratorDashboardDto: {
+      curatorName: string;
+      today: string;
+      stats: { students: number; active: number; groups: number; teachers: number };
+      todayPracticeGroupsCount: number;
+      newStudentsCount: number;
+      attentionCount: number;
+      attentionRows: { label: string; count: number; to: "students" | "groups" }[];
+      todayMeetings: (components["schemas"]["StudentMeetingDto"] & { groupName: string | null })[];
+      idleStudents: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        avatarTone: string;
+        lastActivity: string;
+      }[];
+    };
 
     MeProfileDto: {
       firstName: string;

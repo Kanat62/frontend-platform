@@ -1,6 +1,5 @@
-import { TODAY } from "@/shared/config";
+import { TODAY, WEEK_RHYTHM } from "@/shared/config";
 import type { Dto } from "@/shared/api";
-import { WEEK_RHYTHM } from "./dayState";
 
 /**
  * Порт инлайн-логики превью дня из Dashboard (english-flow/src/routes/dashboard.tsx):
