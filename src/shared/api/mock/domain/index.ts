@@ -5,6 +5,7 @@ export { effectiveAccessStatus } from "./access";
 export { lessonState, progressOf, currentLessonOrder, watchedPctOf } from "./lesson-progress";
 export { monthOfLesson, levelForLesson, stageForBlock, stageStatus, courseLevels, levelStatus } from "./program";
 export { testForLesson, attemptsFor, activeAttempt, bestAttempt, testAvailability } from "./test-availability";
+export { scoreAttempt } from "./test-scoring";
 export { nextStepFor, type NextStep } from "./next-step";
 export {
   meetingsFor,

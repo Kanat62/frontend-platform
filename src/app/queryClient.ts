@@ -1,5 +1,6 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ApiError } from "@/shared/lib";
 
 /**
  * Единственный инстанс QueryClient. Синглтон (а не только `useState` внутри
@@ -12,7 +13,12 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       gcTime: 5 * 60_000,
-      retry: 1,
+      // 4xx (404 «не найдено», 403 «нет доступа» и т.п.) не станут успешными от
+      // повтора — 1 ретрай только на вероятно временные ошибки (сеть, 5xx). 401
+      // сюда не попадает вовсе: его обрабатывает refresh-on-401 в shared/api/client.ts,
+      // до того как ошибка вообще доходит до React Query.
+      retry: (failureCount, error) =>
+        failureCount < 1 && !(error instanceof ApiError && error.status >= 400 && error.status < 500),
       refetchOnWindowFocus: false,
     },
   },

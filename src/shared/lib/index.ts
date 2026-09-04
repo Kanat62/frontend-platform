@@ -10,6 +10,7 @@ export {
   weekdayFull,
   weekRangeOf,
   shiftWeek,
+  formatDuration,
 } from "./date";
 export { transliterate, generateLogin, generatePassword } from "./credentials";
 export { ApiError, normalizeHttpError, type ApiErrorShape } from "./http-error";

@@ -1,5 +1,6 @@
 import { HttpResponse } from "msw";
 import { db } from "./db";
+import { effectiveAccessStatus } from "./domain";
 import type { Student } from "./seed-data/mock-data";
 
 /** Общие мелочи для MSW-хендлеров: разбор Bearer-токена, стандартные ошибки. */
@@ -27,4 +28,14 @@ export function forbidden(message = "Доступ запрещён") {
 
 export function notFound(message = "Не найдено") {
   return HttpResponse.json({ statusCode: 404, error: "Not Found", message }, { status: 404 });
+}
+
+/**
+ * Гейт учебных мутаций (`watch`, старт/ответы/submit теста) при неактивном доступе
+ * (BACKEND.md §7.6) — `403`, чтение (`/me/*` GET) не гейтится. Возвращает `Response`,
+ * если доступ неактивен, иначе `null` (мутация может продолжаться).
+ */
+export function requireActiveAccess(student: Student): Response | null {
+  if (effectiveAccessStatus(student) !== "active") return forbidden("Доступ к обучению закрыт");
+  return null;
 }

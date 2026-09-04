@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysLeft, formatDate, formatFull, relativeDay, weekdayShort, weekRangeOf } from "./date";
+import { daysLeft, formatDate, formatDuration, formatFull, relativeDay, weekdayShort, weekRangeOf } from "./date";
 
 // TODAY (config) = 2026-08-18, вторник — фиксировано под референс (TЗ §15.6).
 
@@ -31,6 +31,15 @@ describe("weekdayShort", () => {
   it("returns Пн for a Monday", () => {
     expect(weekdayShort("2026-08-17")).toBe("Пн");
     expect(weekdayShort("2026-08-18")).toBe("Вт");
+  });
+});
+
+describe("formatDuration", () => {
+  it("pads minutes and seconds to mm:ss", () => {
+    expect(formatDuration(0)).toBe("00:00");
+    expect(formatDuration(9)).toBe("00:09");
+    expect(formatDuration(65)).toBe("01:05");
+    expect(formatDuration(300)).toBe("05:00");
   });
 });
 

@@ -16,4 +16,7 @@ export type {
   WeekPlanStatus,
   DayItemKind,
   DayItemStatus,
+  QuestionType,
+  AttemptStatus,
+  TestLockedReason,
 } from "./schema";

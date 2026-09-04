@@ -95,3 +95,10 @@ export function shiftWeek(anchor: string, weeks: number): string {
   d.setDate(d.getDate() + weeks * 7);
   return d.toISOString().slice(0, 10);
 }
+
+/** «04:37» — таймер теста (test-runner). Порт `formatTime` из lesson.$order_.test.tsx. */
+export function formatDuration(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}

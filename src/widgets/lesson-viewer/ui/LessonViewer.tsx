@@ -5,14 +5,16 @@ import { paths } from "@/shared/config";
 import { ApiError } from "@/shared/lib";
 import { EmptyState, Pill, ProgressBar, VideoPlayer } from "@/shared/ui";
 import { LessonStatePill, useLessonQuery } from "@/entities/lesson";
+import { useTrackWatchProgress } from "@/features/track-watch-progress";
 import { TestCard } from "./TestCard";
 
-// Порт LessonPage из english-flow/src/routes/lesson.$order.tsx. Просмотр видео —
-// на шаге 3 только отображение сохранённого прогресса; авто-завершение по 90%
-// подключит features/track-watch-progress (FRONTEND.md §16, шаг 4).
+// Порт LessonPage из english-flow/src/routes/lesson.$order.tsx.
 export function LessonViewer({ order }: { order: number }) {
   const { data: lesson, isPending, isError, error, refetch } = useLessonQuery(order);
   const [videoError, setVideoError] = useState(false);
+  // Хук зовём безусловно (правила хуков) — до ранних return его initialWatchedPct
+  // ещё не готов, поэтому дальше используется, только когда `lesson` уже загружен.
+  const { watchedPct, onTimeUpdate } = useTrackWatchProgress(order, lesson?.watchedPct ?? 0);
 
   useEffect(() => setVideoError(false), [order]);
 
@@ -63,6 +65,8 @@ export function LessonViewer({ order }: { order: number }) {
           <VideoPlayer
             src={lesson.videoUrl}
             onError={() => setVideoError(true)}
+            onTimeUpdate={onTimeUpdate}
+            onEnded={onTimeUpdate}
             className="aspect-video w-full"
             poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='9'><rect width='16' height='9' fill='%23231f36'/></svg>"
           />
@@ -89,10 +93,10 @@ export function LessonViewer({ order }: { order: number }) {
           ) : (
             <div className="rounded-xl border border-border bg-surface p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-bold text-muted-foreground">Просмотрено {lesson.watchedPct}%</p>
+                <p className="text-xs font-bold text-muted-foreground">Просмотрено {watchedPct}%</p>
                 <p className="text-[11px] text-muted-foreground">Завершается автоматически после 90%</p>
               </div>
-              <ProgressBar value={lesson.watchedPct} className="mt-2" />
+              <ProgressBar value={watchedPct} className="mt-2" />
             </div>
           )}
 

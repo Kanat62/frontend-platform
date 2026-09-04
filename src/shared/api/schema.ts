@@ -19,6 +19,10 @@ export type WeekPlanKind = "theory" | "practice" | "rest";
 export type WeekPlanStatus = "done" | "past" | "today" | "upcoming" | "locked" | "rest";
 export type DayItemKind = "lesson" | "test" | "practice";
 export type DayItemStatus = "done" | "missed" | "scheduled" | "cancelled";
+export type QuestionType = "single" | "multiple";
+export type AttemptStatus = "in_progress" | "submitted";
+/** Причина, по которой тест заблокирован — считается на сервере (FRONTEND.md §7). */
+export type TestLockedReason = "lesson_not_completed" | "not_published";
 
 export interface components {
   schemas: {
@@ -192,6 +196,90 @@ export interface components {
       meetUrl?: string;
       lessonOrder?: number;
     };
+
+    /** `POST /me/lessons/:order/watch` — BACKEND.md §7.2. */
+    WatchProgressRequestDto: {
+      pct: number;
+    };
+
+    WatchProgressResponseDto: {
+      watchedPct: number;
+      state: LessonState;
+      /** Урок только что пересёк порог 90% этим запросом — сигнал для тоста на фронте. */
+      completedJustNow: boolean;
+    };
+
+    /** Вариант ответа без `isCorrect` — отдаётся, пока попытка `in_progress` (скоринг только на сервере). */
+    QuestionOptionDto: {
+      id: string;
+      text: string;
+    };
+
+    /** Вариант с разбором — отдаётся только после `submit` (ResultView). */
+    QuestionOptionReviewDto: {
+      id: string;
+      text: string;
+      isCorrect: boolean;
+    };
+
+    TestQuestionDto: {
+      id: string;
+      text: string;
+      type: QuestionType;
+      options: components["schemas"]["QuestionOptionDto"][];
+    };
+
+    TestQuestionReviewDto: {
+      id: string;
+      text: string;
+      type: QuestionType;
+      options: components["schemas"]["QuestionOptionReviewDto"][];
+    };
+
+    /** `GET /me/tests/:order` — интро-экран (IntroView) + причина блокировки, если `locked`. */
+    TestIntroDto: {
+      title: string;
+      questionCount: number;
+      timeLimitSec: number;
+      passingScore: number;
+      availability: TestAvailability;
+      lockedReason?: TestLockedReason;
+      best?: { score: number; passed: boolean };
+      /** Если уже есть активная попытка — фронт сразу переходит к TakingView без лишнего клика. */
+      activeAttemptId?: string;
+    };
+
+    SaveAnswerRequestDto: {
+      questionId: string;
+      optionIds: string[];
+    };
+
+    /**
+     * Единая форма попытки для старта/ответов/`GET /me/attempts/:id` — дискриминант
+     * по `status` ровно как в `TestPage` референса (`TakingView`/`ResultView`).
+     * Пока `in_progress` — вопросы без `isCorrect` (скоринг и разбор — только после submit).
+     */
+    TestAttemptDto:
+      | {
+          status: "in_progress";
+          id: string;
+          title: string;
+          expiresAt: string;
+          answers: Record<string, string[]>;
+          questions: components["schemas"]["TestQuestionDto"][];
+        }
+      | {
+          status: "submitted";
+          id: string;
+          title: string;
+          passingScore: number;
+          correctCount: number;
+          totalQuestions: number;
+          score: number;
+          passed: boolean;
+          answers: Record<string, string[]>;
+          questions: components["schemas"]["TestQuestionReviewDto"][];
+        };
 
     MeProfileDto: {
       firstName: string;

@@ -1,9 +1,9 @@
 import { http, HttpResponse, type HttpHandler } from "msw";
-import { TODAY } from "@/shared/config";
+import { COMPLETE_THRESHOLD, TODAY } from "@/shared/config";
 import { daysLeft, weekRangeOf } from "@/shared/lib";
 import type { Dto } from "@/shared/api/schema";
 import { db } from "../db";
-import { currentStudent, notFound, unauthorized } from "../context";
+import { currentStudent, forbidden, notFound, requireActiveAccess, unauthorized } from "../context";
 import { courseProduct, COURSE_STAGES, type Lesson, type Meeting, type Student } from "../seed-data/mock-data";
 import {
   activityDatesFor,
@@ -204,6 +204,40 @@ export const meHandlers: HttpHandler[] = [
       ...(nextLesson ? { next: { order: nextLesson.order, title: nextLesson.title } } : {}),
       nextLocked,
       ...(test ? { test } : {}),
+    };
+    return HttpResponse.json(response);
+  }),
+
+  http.post("*/me/lessons/:order/watch", async ({ request, params }) => {
+    const student = currentStudent(request);
+    if (!student) return unauthorized();
+    const guard = requireActiveAccess(student);
+    if (guard) return guard;
+
+    const order = Number(params.order);
+    const lesson = db.lessons.find((l) => l.order === order);
+    if (!lesson) return notFound("Урок не найден");
+    if (order > student.openedUpTo) return forbidden("Урок пока закрыт");
+
+    const body = (await request.json()) as Dto<"WatchProgressRequestDto">;
+    const wasCompleted = student.completed.includes(order);
+    let completedJustNow = false;
+
+    // Порт `updateWatchProgress`/`completeLesson` из store.tsx (BACKEND.md §7.2):
+    // прогресс — максимум с уже сохранённым; завершение — авто при пересечении порога.
+    student.watched = { ...student.watched, [order]: Math.max(student.watched[order] ?? 0, body.pct) };
+    if (!wasCompleted && body.pct / 100 >= COMPLETE_THRESHOLD) {
+      student.completed = [...student.completed, order];
+      student.completedAt = { ...student.completedAt, [order]: TODAY };
+      student.watched = { ...student.watched, [order]: 100 };
+      completedJustNow = true;
+    }
+    student.lastActivity = TODAY;
+
+    const response: Dto<"WatchProgressResponseDto"> = {
+      watchedPct: watchedPctOf(student, order),
+      state: lessonState(student, order),
+      completedJustNow,
     };
     return HttpResponse.json(response);
   }),

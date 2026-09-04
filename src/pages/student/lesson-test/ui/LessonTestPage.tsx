@@ -1,11 +1,16 @@
-// TODO(FRONTEND.md §16, шаг 3): экран «Тест к уроку» — заглушка каркаса (шаг 1).
+import { useParams } from "react-router";
+import { Lock } from "lucide-react";
+import { EmptyState } from "@/shared/ui";
+import { TestRunner } from "@/widgets/test-runner";
+
+// Порт english-flow/src/routes/lesson.$order_.test.tsx (composition + чтение params).
 export function LessonTestPage() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 p-10 text-center">
-      <div>
-        <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Тест к уроку</p>
-        <p className="mt-1 text-xs text-muted-foreground">Экран в разработке.</p>
-      </div>
-    </div>
-  );
+  const { order } = useParams<{ order: string }>();
+  const num = Number(order);
+
+  if (!order || !Number.isInteger(num) || num < 1) {
+    return <EmptyState icon={Lock} title="Тест не найден" description="Проверьте ссылку или вернитесь к уроку." />;
+  }
+
+  return <TestRunner order={num} />;
 }
