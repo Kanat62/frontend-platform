@@ -8,10 +8,11 @@ import { groupsHandlers } from "./groups";
 import { teachersHandlers } from "./teachers";
 import { dashboardHandlers } from "./dashboard";
 import { lessonsHandlers } from "./lessons";
+import { meetingsHandlers } from "./meetings";
+import { coursesHandlers } from "./courses";
 
-// Хендлеры добавляются по модулю по мере разработки (FRONTEND.md §13, §16):
-// meetings.ts (полный CRUD), lessons.ts (curator-редактирование) — шаг 6.
-// Каждый файл экспортирует массив HttpHandler и добавляется сюда.
+// Каждый файл — по модулю (FRONTEND.md §13), экспортирует массив HttpHandler
+// и добавляется сюда.
 
 export const handlers: HttpHandler[] = [
   ...authHandlers,
@@ -23,4 +24,6 @@ export const handlers: HttpHandler[] = [
   ...teachersHandlers,
   ...dashboardHandlers,
   ...lessonsHandlers,
+  ...meetingsHandlers,
+  ...coursesHandlers,
 ];

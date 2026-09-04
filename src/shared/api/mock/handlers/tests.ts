@@ -1,7 +1,7 @@
 import { http, HttpResponse, type HttpHandler } from "msw";
 import type { Dto, TestLockedReason } from "@/shared/api/schema";
 import { db } from "../db";
-import { currentStudent, forbidden, notFound, requireActiveAccess, unauthorized } from "../context";
+import { badRequest, currentStudent, forbidden, notFound, requireActiveAccess, requireCurator, unauthorized } from "../context";
 import type { LessonTest, TestAttempt } from "../seed-data/mock-data";
 import { activeAttempt, bestAttempt, lessonState, scoreAttempt, testAvailability, testForLesson } from "../domain";
 
@@ -49,6 +49,25 @@ function toResultDto(attempt: TestAttempt, test: LessonTest): Dto<"TestAttemptDt
 
 function attemptDto(attempt: TestAttempt, test: LessonTest): Dto<"TestAttemptDto"> {
   return attempt.status === "submitted" ? toResultDto(attempt, test) : toTakingDto(attempt, test);
+}
+
+/** Куратор (в отличие от `attemptDto`) всегда видит `isCorrect` — это редактор, не попытка. */
+function editorDto(test: LessonTest): Dto<"TestEditorDto"> {
+  return {
+    id: test.id,
+    lessonOrder: test.lessonOrder,
+    title: test.title,
+    timeLimitSec: test.timeLimitSec,
+    passingScore: test.passingScore,
+    status: test.status,
+    questions: test.questions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      type: q.type,
+      order: q.order,
+      options: q.options.map((o) => ({ id: o.id, text: o.text, isCorrect: o.isCorrect })),
+    })),
+  };
 }
 
 /** Порт скоринга из `submitAttempt` (store.tsx) — мутирует попытку в `db.attempts` на месте. */
@@ -200,5 +219,126 @@ export const testsHandlers: HttpHandler[] = [
 
     ensureFresh(attempt, test);
     return HttpResponse.json(attemptDto(attempt, test));
+  }),
+
+  /* ---------- куратор: редактор теста (BACKEND.md §12, tests) ---------- */
+
+  http.get("*/tests/:lessonOrder([^./]+)", ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const order = Number(params.lessonOrder);
+    const test = db.tests.find((t) => t.lessonOrder === order);
+    return HttpResponse.json(test ? editorDto(test) : null);
+  }),
+
+  http.post("*/tests", async ({ request }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const body = (await request.json()) as Dto<"CreateTestRequestDto">;
+    if (!db.lessons.some((l) => l.order === body.lessonOrder)) return badRequest("Урок не найден");
+    const existing = db.tests.find((t) => t.lessonOrder === body.lessonOrder);
+    if (existing) return HttpResponse.json(editorDto(existing));
+
+    const test: LessonTest = {
+      id: `test-${Date.now()}`,
+      lessonOrder: body.lessonOrder,
+      title: `Тест к уроку ${body.lessonOrder}`,
+      timeLimitSec: 300,
+      passingScore: 70,
+      status: "draft",
+      questions: [],
+    };
+    db.tests.push(test);
+    return HttpResponse.json(editorDto(test), { status: 201 });
+  }),
+
+  http.patch("*/tests/:id([^./]+)", async ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const test = db.tests.find((t) => t.id === params.id);
+    if (!test) return notFound("Тест не найден");
+
+    const body = (await request.json()) as Dto<"UpdateTestRequestDto">;
+    // Публикация — только при ≥ 1 вопросе (TЗ, инвариант 6).
+    if (body.status === "published" && test.questions.length === 0) {
+      return badRequest("Нельзя опубликовать тест без вопросов");
+    }
+    if (body.title !== undefined) test.title = body.title;
+    if (body.timeLimitSec !== undefined) test.timeLimitSec = body.timeLimitSec;
+    if (body.passingScore !== undefined) test.passingScore = body.passingScore;
+    if (body.status !== undefined) test.status = body.status;
+    return HttpResponse.json(editorDto(test));
+  }),
+
+  http.delete("*/tests/:id([^./]+)", ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const index = db.tests.findIndex((t) => t.id === params.id);
+    if (index === -1) return notFound("Тест не найден");
+    db.tests.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post("*/tests/:id/questions", ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const test = db.tests.find((t) => t.id === params.id);
+    if (!test) return notFound("Тест не найден");
+
+    const order = test.questions.length + 1;
+    const qId = `${test.id}-q${Date.now()}`;
+    test.questions.push({
+      id: qId,
+      text: "",
+      type: "single",
+      order,
+      options: [0, 1, 2, 3].map((i) => ({ id: `${qId}-o${i}`, text: "", isCorrect: i === 0 })),
+    });
+    return HttpResponse.json(editorDto(test), { status: 201 });
+  }),
+
+  http.patch("*/questions/:id([^./]+)", async ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const test = db.tests.find((t) => t.questions.some((q) => q.id === params.id));
+    if (!test) return notFound("Вопрос не найден");
+    const question = test.questions.find((q) => q.id === params.id)!;
+
+    const body = (await request.json()) as Dto<"UpdateQuestionRequestDto">;
+    if (body.text !== undefined) question.text = body.text;
+    if (body.type !== undefined) question.type = body.type;
+    return HttpResponse.json(editorDto(test));
+  }),
+
+  http.delete("*/questions/:id([^./]+)", ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const test = db.tests.find((t) => t.questions.some((q) => q.id === params.id));
+    if (!test) return notFound("Вопрос не найден");
+
+    test.questions = test.questions
+      .filter((q) => q.id !== params.id)
+      .map((q, i) => ({ ...q, order: i + 1 }));
+    return HttpResponse.json(editorDto(test));
+  }),
+
+  http.patch("*/options/:id([^./]+)", async ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+    const test = db.tests.find((t) => t.questions.some((q) => q.options.some((o) => o.id === params.id)));
+    if (!test) return notFound("Вариант не найден");
+    const question = test.questions.find((q) => q.options.some((o) => o.id === params.id))!;
+    const option = question.options.find((o) => o.id === params.id)!;
+
+    const body = (await request.json()) as Dto<"UpdateOptionRequestDto">;
+    if (body.text !== undefined) option.text = body.text;
+    if (body.isCorrect !== undefined) {
+      option.isCorrect = body.isCorrect;
+      // Для single-choice правильный вариант — эксклюзивно (BACKEND.md §12).
+      if (body.isCorrect && question.type === "single") {
+        for (const o of question.options) o.isCorrect = o.id === option.id;
+      }
+    }
+    return HttpResponse.json(editorDto(test));
   }),
 ];

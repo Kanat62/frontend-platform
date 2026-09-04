@@ -1,2 +1,12 @@
-export type { MeetingStatus, MeetingSummary } from "./model/types";
+export type {
+  MeetingStatus,
+  MeetingScope,
+  MeetingSummary,
+  ScheduleMeeting,
+  MeetingAttendee,
+  CreateMeetingRequest,
+  UpdateMeetingRequest,
+  MarkAttendanceRequest,
+} from "./model/types";
+export { meetingsQueryOptions, useMeetingsQuery } from "./api/queries";
 export { MeetingPill } from "./ui/MeetingPill";

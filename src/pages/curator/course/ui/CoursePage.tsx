@@ -1,11 +1,18 @@
-// TODO(FRONTEND.md §16, шаг 5): экран «Курсы» — заглушка каркаса (шаг 1).
+import { CourseProductsPanel } from "@/widgets/course-products-panel";
+import { LessonCatalog } from "@/widgets/lesson-catalog";
+
+// Порт CuratorCourse из curator.course.index.tsx.
 export function CoursePage() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 p-10 text-center">
-      <div>
-        <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Курсы</p>
-        <p className="mt-1 text-xs text-muted-foreground">Экран в разработке.</p>
-      </div>
+    <div className="space-y-5 rise-in">
+      <header>
+        <h1 className="text-2xl font-extrabold sm:text-3xl">Курсы и контент</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Один теоретический контент — несколько форматов. Практика отличается, теория общая.
+        </p>
+      </header>
+      <CourseProductsPanel />
+      <LessonCatalog />
     </div>
   );
 }

@@ -22,4 +22,6 @@ export type {
   GroupStatus,
   TeacherStatus,
   PaymentStatus,
+  TestStatus,
+  MeetingScope,
 } from "./schema";

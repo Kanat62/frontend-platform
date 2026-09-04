@@ -198,7 +198,8 @@ export const meHandlers: HttpHandler[] = [
       block: lesson.block,
       state,
       // Урок «закрыт» — видео не отдаём (то, что гейтит доступ, фронт не пересчитывает).
-      videoUrl: state === "locked" ? "" : lesson.videoUrl,
+      // Тестовое видео (TЗ §4.3, курс/preview-video) временно подменяет видео во всех уроках.
+      videoUrl: state === "locked" ? "" : (db.previewVideoUrl ?? lesson.videoUrl),
       watchedPct: watchedPctOf(student, order),
       ...(prevLesson ? { prev: { order: prevLesson.order, title: prevLesson.title } } : {}),
       ...(nextLesson ? { next: { order: nextLesson.order, title: nextLesson.title } } : {}),

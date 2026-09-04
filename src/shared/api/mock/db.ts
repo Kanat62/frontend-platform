@@ -40,6 +40,8 @@ function seed() {
     curator: structuredClone(CURATOR),
     products: structuredClone(COURSE_PRODUCTS),
     stages: structuredClone(COURSE_STAGES),
+    /** Тестовое видео (TЗ §4.3) — подменяет `videoUrl` во всех уроках, пока не сброшено. */
+    previewVideoUrl: null as string | null,
   };
 }
 

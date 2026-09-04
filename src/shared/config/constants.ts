@@ -12,6 +12,9 @@ export const SCHOOL_TZ = "Asia/Bishkek";
 /** Всего уроков в программе. TЗ §4.2. */
 export const LESSON_COUNT = 54;
 
+/** Стандартное видео уроков в сиде (TЗ §4.3) — «Заменить видео» сбрасывается на него. */
+export const DEFAULT_LESSON_VIDEO_URL = "/Video%20Project%201.mp4";
+
 /**
  * Недельный ритм теория/практика/выходной (индекс 0 = понедельник). Общий для
  * `widgets/student-dashboard` (раскладка «Моей недели») и `widgets/group-detail`

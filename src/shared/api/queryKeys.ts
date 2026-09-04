@@ -44,7 +44,23 @@ export const qk = {
     detail: (id: string) => ["groups", id] as const,
   },
   teachers: {
-    options: ["teachers", "options"] as const,
+    /** Общий ключ: `GET /teachers` отдаёт и полный список, и опции для селектов (`select`). */
+    list: ["teachers"] as const,
+    detail: (id: string) => ["teachers", id] as const,
+  },
+  meetings: {
+    range: (range: string) => ["meetings", range] as const,
+  },
+  lessons: {
+    catalog: ["lessons", "catalog"] as const,
+    editor: (order: number) => ["lessons", order, "editor"] as const,
+  },
+  tests: {
+    editor: (lessonOrder: number) => ["tests", lessonOrder, "editor"] as const,
+  },
+  courses: {
+    products: ["courses", "products"] as const,
+    previewVideo: ["courses", "preview-video"] as const,
   },
   curatorDashboard: ["curator", "dashboard"] as const,
 } as const;

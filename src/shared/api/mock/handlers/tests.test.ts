@@ -152,3 +152,77 @@ describe("IDOR: /me/attempts/:id belongs only to its owner (TЗ, инвариа�
     await expect(apiClient.post(`/me/attempts/${mine.id}/submit`)).rejects.toMatchObject({ status: 403 });
   });
 });
+
+describe("curator: редактор теста — BACKEND.md §12 (tests). Урок 5 без сеяного теста.", () => {
+  beforeAll(async () => {
+    const { accessToken } = await apiClient.post<Dto<"LoginResponseDto">>("/auth/login", {
+      login: "curator",
+      password: "test123",
+    });
+    setAccessToken(accessToken);
+  });
+
+  it("GET /tests/:lessonOrder is null before a test is created", async () => {
+    const test = await apiClient.get<Dto<"TestEditorDto"> | null>("/tests/5");
+    expect(test).toBeNull();
+  });
+
+  it("creates a draft test, adds a question with 4 options (first correct), edits it, then publishes", async () => {
+    const created = await apiClient.post<Dto<"TestEditorDto">>("/tests", { lessonOrder: 5 });
+    expect(created.status).toBe("draft");
+    expect(created.lessonOrder).toBe(5);
+
+    // Публикация без вопросов запрещена (TЗ, инвариант 6).
+    await expect(apiClient.patch(`/tests/${created.id}`, { status: "published" })).rejects.toMatchObject({
+      status: 400,
+    });
+
+    const withQuestion = await apiClient.post<Dto<"TestEditorDto">>(`/tests/${created.id}/questions`);
+    expect(withQuestion.questions).toHaveLength(1);
+    const question = withQuestion.questions[0]!;
+    expect(question.options).toHaveLength(4);
+    expect(question.options[0]!.isCorrect).toBe(true);
+    expect(question.options.filter((o) => o.isCorrect)).toHaveLength(1);
+
+    await apiClient.patch(`/questions/${question.id}`, { text: "What is 2+2?", type: "single" });
+    await apiClient.patch(`/options/${question.options[0]!.id}`, { text: "3" });
+    // Эксклюзивность для single: отметить второй вариант правильным снимает флаг с первого.
+    const afterExclusive = await apiClient.patch<Dto<"TestEditorDto">>(`/options/${question.options[1]!.id}`, {
+      text: "4",
+      isCorrect: true,
+    });
+    const q2 = afterExclusive.questions[0]!;
+    expect(q2.options[0]!.isCorrect).toBe(false);
+    expect(q2.options[1]!.isCorrect).toBe(true);
+
+    const published = await apiClient.patch<Dto<"TestEditorDto">>(`/tests/${created.id}`, { status: "published" });
+    expect(published.status).toBe("published");
+
+    // Опубликованный тест урока 5 виден ученику с завершённым уроком 5.
+    // aibek (s3): completed=[1..6] -> урок 5 completed, тест доступен.
+    await apiClient
+      .post<Dto<"LoginResponseDto">>("/auth/login", { login: "aibek", password: "test123" })
+      .then((r) => setAccessToken(r.accessToken));
+    const intro = await apiClient.get<Dto<"TestIntroDto">>("/me/tests/5");
+    expect(intro.availability).toBe("available");
+    expect(intro.questionCount).toBe(1);
+
+    await apiClient
+      .post<Dto<"LoginResponseDto">>("/auth/login", { login: "curator", password: "test123" })
+      .then((r) => setAccessToken(r.accessToken));
+  });
+
+  it("deletes a question (renumbering the rest) and deletes the whole test", async () => {
+    const test = await apiClient.get<Dto<"TestEditorDto">>("/tests/5");
+    const testId = test!.id;
+    await apiClient.post<Dto<"TestEditorDto">>(`/tests/${testId}/questions`); // second question, order 2
+
+    const afterDelete = await apiClient.delete<Dto<"TestEditorDto">>(`/questions/${test!.questions[0]!.id}`);
+    expect(afterDelete.questions).toHaveLength(1);
+    expect(afterDelete.questions[0]!.order).toBe(1);
+
+    await apiClient.delete(`/tests/${testId}`);
+    const gone = await apiClient.get<Dto<"TestEditorDto"> | null>("/tests/5");
+    expect(gone).toBeNull();
+  });
+});

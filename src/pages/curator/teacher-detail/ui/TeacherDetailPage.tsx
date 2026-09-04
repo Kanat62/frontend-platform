@@ -1,11 +1,15 @@
-// TODO(FRONTEND.md §16, шаг 5): экран «Карточка преподавателя» — заглушка каркаса (шаг 1).
+import { useParams } from "react-router";
+import { Lock } from "lucide-react";
+import { EmptyState } from "@/shared/ui";
+import { TeacherCard } from "@/widgets/teacher-card";
+
+// Порт curator.teachers.$id.tsx (composition + чтение params).
 export function TeacherDetailPage() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 p-10 text-center">
-      <div>
-        <p className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Карточка преподавателя</p>
-        <p className="mt-1 text-xs text-muted-foreground">Экран в разработке.</p>
-      </div>
-    </div>
-  );
+  const { id } = useParams<{ id: string }>();
+
+  if (!id) {
+    return <EmptyState icon={Lock} title="Преподаватель не найден" description="Проверьте ссылку или вернитесь к списку." />;
+  }
+
+  return <TeacherCard teacherId={id} />;
 }

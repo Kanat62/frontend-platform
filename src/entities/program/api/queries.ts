@@ -1,11 +1,14 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/shared/api";
+import { apiClient, qk } from "@/shared/api";
 import type { LessonCatalogItem } from "../model/types";
 
-/** `GET /lessons` — минимальный каталог для group-detail («Доступ к урокам»). */
+/**
+ * `GET /lessons` — каталог 54 уроков. Общий для `group-detail` («Доступ к
+ * урокам», читает только `.order`) и `lesson-catalog` (шаг 6, читает всё).
+ */
 export function lessonCatalogQueryOptions() {
   return queryOptions({
-    queryKey: ["lessons", "catalog"] as const,
+    queryKey: qk.lessons.catalog,
     queryFn: () => apiClient.get<LessonCatalogItem[]>("/lessons"),
     staleTime: 5 * 60_000,
   });

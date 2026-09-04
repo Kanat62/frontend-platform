@@ -21,6 +21,8 @@ export type DayItemKind = "lesson" | "test" | "practice";
 export type DayItemStatus = "done" | "missed" | "scheduled" | "cancelled";
 export type QuestionType = "single" | "multiple";
 export type AttemptStatus = "in_progress" | "submitted";
+export type TestStatus = "draft" | "published";
+export type MeetingScope = "GROUP" | "INDIVIDUAL";
 /** Причина, по которой тест заблокирован — считается на сервере (FRONTEND.md §7). */
 export type TestLockedReason = "lesson_not_completed" | "not_published";
 export type GroupStatus = "recruiting" | "active" | "finished" | "archived";
@@ -237,6 +239,88 @@ export interface components {
       text: string;
       type: QuestionType;
       options: components["schemas"]["QuestionOptionReviewDto"][];
+    };
+
+    /* ---------- куратор: редактор теста (BACKEND.md §12, tests) ---------- */
+
+    /** Вариант в редакторе — куратор всегда видит `isCorrect` (в отличие от `QuestionOptionDto`). */
+    TestEditorOptionDto: {
+      id: string;
+      text: string;
+      isCorrect: boolean;
+    };
+
+    TestEditorQuestionDto: {
+      id: string;
+      text: string;
+      type: QuestionType;
+      order: number;
+      options: components["schemas"]["TestEditorOptionDto"][];
+    };
+
+    /** `GET /tests/:lessonOrder`, ответ create/update — полный тест для редактора. */
+    TestEditorDto: {
+      id: string;
+      lessonOrder: number;
+      title: string;
+      timeLimitSec: number;
+      passingScore: number;
+      status: TestStatus;
+      questions: components["schemas"]["TestEditorQuestionDto"][];
+    };
+
+    CreateTestRequestDto: {
+      lessonOrder: number;
+    };
+
+    /** Публикация (`status: "published"`) требует ≥ 1 вопроса — проверяется на сервере (TЗ, инвариант 6). */
+    UpdateTestRequestDto: {
+      title?: string;
+      timeLimitSec?: number;
+      passingScore?: number;
+      status?: TestStatus;
+    };
+
+    UpdateQuestionRequestDto: {
+      text?: string;
+      type?: QuestionType;
+    };
+
+    /** Для `type: "single"` сервер снимает `isCorrect` с остальных вариантов вопроса (эксклюзивность). */
+    UpdateOptionRequestDto: {
+      text?: string;
+      isCorrect?: boolean;
+    };
+
+    /* ---------- куратор: курсы (BACKEND.md §12, courses) ---------- */
+
+    CourseLevelPlanEntryDto: {
+      month: number;
+      level: CefrLevel;
+    };
+
+    CourseProductDto: {
+      id: string;
+      language: LanguageCode;
+      format: CourseType;
+      title: string;
+      durationMonths: number;
+      price: number;
+      currency: string;
+      features: string[];
+      levelPlan: components["schemas"]["CourseLevelPlanEntryDto"][];
+    };
+
+    /**
+     * Тестовое видео (TЗ §4.3) — временно подменяет `videoUrl` во всех уроках
+     * (инструмент проверки, не часть основного контента курса).
+     */
+    PreviewVideoDto: {
+      url: string | null;
+    };
+
+    SetPreviewVideoRequestDto: {
+      url: string | null;
     };
 
     /** `GET /me/tests/:order` — интро-экран (IntroView) + причина блокировки, если `locked`. */
@@ -563,22 +647,151 @@ export interface components {
       meetUrl?: string;
     };
 
+    /** Ряд ростера практики — для отметки посещаемости (BACKEND.md §7.5). */
+    MeetingAttendeeDto: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      avatarTone: string;
+      present: boolean;
+    };
+
+    /** Строка `/meetings` — куратор видит все практики за диапазон (schedule-board). */
+    ScheduleMeetingDto: {
+      id: string;
+      lessonOrder: number;
+      scope: MeetingScope;
+      groupId: string | null;
+      groupName: string | null;
+      studentId: string | null;
+      studentName: string | null;
+      title: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      meetUrl: string;
+      status: MeetingStatus;
+      teacherName: string | null;
+      /** Для завершённых практик — кто присутствовал (пусто до `status: "completed"`). */
+      roster: components["schemas"]["MeetingAttendeeDto"][];
+    };
+
     /**
-     * `GET /lessons` — минимальный каталог (order/title/block) для
-     * group-detail («Доступ к урокам»). Поля расширятся в шаге 6, когда
-     * появится полноценный `lesson-catalog`/`lesson-editor` (описание,
-     * видео, метка «есть практика» — BACKEND.md §12).
+     * `POST /meetings` — практика группе или индивидуальному ученику (BACKEND.md §12).
+     * Для `scope: "GROUP"` время берётся из группы, если не передано; для
+     * `"INDIVIDUAL"` время обязательно — единого слота у индивидуальных
+     * учеников нет (в отличие от вечернего слота группы).
+     */
+    CreateMeetingRequestDto: {
+      scope: MeetingScope;
+      groupId?: string | null;
+      studentId?: string | null;
+      date: string;
+      startTime?: string;
+      endTime?: string;
+      meetUrl?: string;
+    };
+
+    UpdateMeetingRequestDto: {
+      status?: MeetingStatus;
+      date?: string;
+      meetUrl?: string;
+    };
+
+    MarkAttendanceRequestDto: {
+      studentId: string;
+      present: boolean;
+    };
+
+    /**
+     * `GET /lessons` — каталог 54 уроков: `group-detail` («Доступ к урокам»)
+     * читает только `order`, `lesson-catalog` (шаг 6) показывает всё остальное
+     * (BACKEND.md §12: «+ метка «есть практика»»).
      */
     LessonCatalogItemDto: {
       order: number;
       title: string;
       block: string;
+      duration: string;
+      hasPractice: boolean;
+    };
+
+    /** `GET /lessons/:order` (роль C) — редактор урока + статистика по ученикам. */
+    LessonEditorDto: {
+      order: number;
+      title: string;
+      description: string;
+      videoUrl: string;
+      duration: string;
+      block: string;
+      stats: { opened: number; inProgress: number; completed: number };
+    };
+
+    UpdateLessonRequestDto: {
+      title?: string;
+      description?: string;
+      videoUrl?: string;
     };
 
     TeacherOptionDto: {
       id: string;
       name: string;
       languages: LanguageCode[];
+      status: TeacherStatus;
+    };
+
+    /** Строка `/teachers` — сводка для списка (BACKEND.md §12). */
+    TeacherListItemDto: components["schemas"]["TeacherOptionDto"] & {
+      phone: string;
+      tone: string;
+      groupsCount: number;
+      studentsCount: number;
+      nextPracticeDate: string | null;
+    };
+
+    TeachersListDto: {
+      items: components["schemas"]["TeacherListItemDto"][];
+      summary: { active: number; absent: number; replacement: number; practicesToday: number };
+    };
+
+    /** Группа в карточке преподавателя — минимум для строки + селектора замены. */
+    TeacherGroupDto: {
+      id: string;
+      name: string;
+      language: LanguageCode;
+      status: GroupStatus;
+      practiceStart: string;
+      practiceEnd: string;
+      studentCount: number;
+      maxStudents: number;
+      month: number;
+      level: CefrLevel;
+    };
+
+    TeacherIndividualStudentDto: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      avatarTone: string;
+      language: LanguageCode;
+    };
+
+    /** `GET /teachers/:id` — BACKEND.md §12. */
+    TeacherDetailDto: components["schemas"]["TeacherOptionDto"] & {
+      phone: string;
+      tone: string;
+      stats: { groupsCount: number; groupStudents: number; individualsCount: number; practicesToday: number };
+      groups: components["schemas"]["TeacherGroupDto"][];
+      individuals: components["schemas"]["TeacherIndividualStudentDto"][];
+    };
+
+    CreateTeacherRequestDto: {
+      name: string;
+      phone: string;
+      languages: LanguageCode[];
+    };
+
+    UpdateTeacherStatusRequestDto: {
       status: TeacherStatus;
     };
 

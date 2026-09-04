@@ -5,12 +5,16 @@ export type {
   LessonListItem,
   LessonDetail,
   LessonTestSummary,
+  LessonEditorDetail,
+  UpdateLessonRequest,
 } from "./model/types";
 export {
   lessonsQueryOptions,
   useLessonsQuery,
   lessonQueryOptions,
   useLessonQuery,
+  lessonEditorQueryOptions,
+  useLessonEditorQuery,
 } from "./api/queries";
 export { LessonRow } from "./ui/LessonRow";
 export { LessonStatePill } from "./ui/LessonStatePill";
