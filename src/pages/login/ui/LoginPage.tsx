@@ -1,25 +1,10 @@
-import { useState, type FormEvent } from "react";
-import { ArrowRight, Eye, EyeOff, Lock, PlayCircle, User2 } from "lucide-react";
-import { toast } from "sonner";
+import { PlayCircle } from "lucide-react";
 import { Logo } from "@/shared/ui";
+import { LoginForm } from "@/features/auth";
 
 // Порт english-flow/src/routes/index.tsx (LoginPage). JSX/Tailwind — 1:1 с
-// референсом. На шаге 1 форма ещё не подключена к сессии — submit и кнопки
-// быстрого входа появятся в features/auth (FRONTEND.md §16, шаг 2).
+// референсом; форма и вход по ролям — features/auth (FRONTEND.md §16, шаг 2).
 export function LoginPage() {
-  const [form, setForm] = useState({ login: "", password: "" });
-  const [show, setShow] = useState(false);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    // TODO(FRONTEND.md §16, шаг 2): features/auth — useLoginMutation + редирект по роли.
-    toast.message("Авторизация подключится на шаге 2");
-  };
-
-  const fill = (l: string) => {
-    setForm({ login: l, password: "test123" });
-  };
-
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       <section className="relative hidden flex-col justify-between overflow-hidden gradient-hero p-12 text-primary-foreground lg:flex">
@@ -77,65 +62,7 @@ export function LoginPage() {
             Логин и пароль выдаёт куратор после оплаты.
           </p>
 
-          <form onSubmit={submit} className="mt-7 space-y-3">
-            <div className="relative">
-              <User2 className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={form.login}
-                onChange={(e) => setForm({ ...form, login: e.target.value })}
-                placeholder="Логин"
-                autoComplete="username"
-                className="w-full rounded-xl border border-input bg-surface py-3 pl-10 pr-3 text-sm font-medium outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
-              />
-            </div>
-            <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type={show ? "text" : "password"}
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Пароль"
-                autoComplete="current-password"
-                className="w-full rounded-xl border border-input bg-surface py-3 pl-10 pr-11 text-sm font-medium outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10"
-              />
-              <button
-                type="button"
-                onClick={() => setShow(!show)}
-                aria-label="Показать пароль"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
-            </div>
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-bold text-primary-foreground shadow-glow transition hover:opacity-95 active:scale-[0.99]"
-            >
-              Войти <ArrowRight className="size-4" />
-            </button>
-          </form>
-
-          <div className="mt-8 rounded-2xl border border-dashed border-border p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-              Тестовые аккаунты
-            </p>
-            <div className="mt-3 space-y-2">
-              <button
-                onClick={() => fill("kanat")}
-                className="flex w-full items-center justify-between rounded-xl bg-muted px-3 py-2.5 text-left text-xs font-semibold transition hover:bg-primary-soft"
-              >
-                <span>Ученик: kanat</span>
-                <span className="text-muted-foreground">Пароль: test123</span>
-              </button>
-              <button
-                onClick={() => fill("curator")}
-                className="flex w-full items-center justify-between rounded-xl bg-muted px-3 py-2.5 text-left text-xs font-semibold transition hover:bg-primary-soft"
-              >
-                <span>Куратор: curator</span>
-                <span className="text-muted-foreground">Пароль: test123</span>
-              </button>
-            </div>
-          </div>
+          <LoginForm />
         </div>
       </section>
     </div>

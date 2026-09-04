@@ -13,7 +13,16 @@ if (!parsed.success) {
   throw new Error("Invalid environment configuration");
 }
 
+const apiMock = parsed.data.VITE_API_MOCK === "1";
+
 export const env = {
-  apiUrl: parsed.data.VITE_API_URL.replace(/\/$/, ""),
-  apiMock: parsed.data.VITE_API_MOCK === "1",
+  /**
+   * Под MSW (`apiMock`) ходим на тот же origin, что и страница (относительные
+   * пути), а не на `VITE_API_URL`: MSW перехватывает запрос на уровне Service
+   * Worker независимо от того, какой origin указан в URL, а вот cookie
+   * refresh-токена (shared/api/client.ts) браузер прикладывает только к
+   * запросам своего origin — see `client.ts` про Set-Cookie-ограничение SW.
+   */
+  apiUrl: apiMock ? "" : parsed.data.VITE_API_URL.replace(/\/$/, ""),
+  apiMock,
 } as const;

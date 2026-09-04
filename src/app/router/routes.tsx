@@ -1,21 +1,30 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, type RouteObject } from "react-router";
 import { ErrorBoundary } from "@/app/providers";
 import { paths } from "./paths";
+import { requireGuest, requireRole } from "./guards";
 
 /**
  * Дерево маршрутов — FRONTEND.md §9. Каждая страница — `lazy()` (route-level
- * code-splitting), гварды ролей и реальные шеллы подключаются на шаге 2
- * (`app/layouts`, `app/router/guards.ts`).
+ * code-splitting). Гварды ролей — `loader` на layout-маршрутах (`guards.ts`).
+ *
+ * Роутер создаётся ЛЕНИВО через `createRouter()` (вызывается из `App.tsx` при
+ * рендере), а не как синглтон на верхнем уровне модуля: `createBrowserRouter`
+ * запускает loader'ы совпавших маршрутов сразу при создании — если бы `router`
+ * был модульной константой, это произошло бы в момент импорта `app/App.tsx`,
+ * т.е. раньше, чем `main.tsx` дожидается `await worker.start()` (MSW), и первый
+ * `GET /auth/me` улетал бы мимо мок-воркера в реальную сеть.
  */
-export const router = createBrowserRouter([
+const routes: RouteObject[] = [
   {
     path: paths.login,
     lazy: () => import("@/pages/login"),
+    loader: requireGuest(),
     errorElement: <ErrorBoundary />,
   },
   {
     path: paths.student.root,
     lazy: () => import("@/app/layouts/StudentLayout"),
+    loader: requireRole("student"),
     errorElement: <ErrorBoundary />,
     children: [
       { index: true, lazy: () => import("@/pages/student/dashboard") },
@@ -29,6 +38,7 @@ export const router = createBrowserRouter([
   {
     path: paths.curator.root,
     lazy: () => import("@/app/layouts/CuratorLayout"),
+    loader: requireRole("curator"),
     errorElement: <ErrorBoundary />,
     children: [
       { index: true, lazy: () => import("@/pages/curator/overview") },
@@ -47,4 +57,12 @@ export const router = createBrowserRouter([
     path: "*",
     lazy: () => import("@/pages/not-found"),
   },
-]);
+];
+
+let router: ReturnType<typeof createBrowserRouter> | null = null;
+
+/** Идемпотентно: повторный вызов (напр. двойной рендер React StrictMode) вернёт тот же инстанс. */
+export function createRouter() {
+  router ??= createBrowserRouter(routes);
+  return router;
+}
