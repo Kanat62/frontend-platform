@@ -1,6 +1,7 @@
 import { http, HttpResponse, type HttpHandler } from "msw";
 import type { Dto } from "@/shared/api/schema";
 import { db } from "../db";
+import { userIdFromAuthHeader, unauthorized } from "../context";
 
 /**
  * Мок `auth` — BACKEND.md §5.2. Access-токен here — не настоящий JWT (это MSW,
@@ -21,12 +22,6 @@ function issueAccessToken(userId: string) {
 
 function issueRefreshCookie(userId: string) {
   return `${REFRESH_COOKIE}=mock-refresh.${userId}; Path=/; SameSite=Lax`;
-}
-
-function userIdFromAuthHeader(header: string | null): string | null {
-  if (!header?.startsWith("Bearer ")) return null;
-  const token = header.slice("Bearer ".length);
-  return /^mock-access\.(.+)$/.exec(token)?.[1] ?? null;
 }
 
 function userIdFromRefreshCookie(cookie: string | undefined): string | null {
@@ -55,13 +50,6 @@ function buildAuthUser(userId: string): Dto<"AuthUserDto"> | null {
       language: student.language,
     },
   };
-}
-
-function unauthorized(message: string) {
-  return HttpResponse.json(
-    { statusCode: 401, error: "Unauthorized", message },
-    { status: 401 },
-  );
 }
 
 export const authHandlers: HttpHandler[] = [
