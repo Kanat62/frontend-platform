@@ -73,7 +73,7 @@ export function GroupList() {
             <Link
               key={g.id}
               to={paths.curator.group(g.id)}
-              className="surface-card space-y-3 p-4 transition hover:border-primary"
+              className="surface-card min-w-0 space-y-3 p-4 transition hover:border-primary"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -93,7 +93,7 @@ export function GroupList() {
                   Month {g.month} · {g.level} · Lesson {g.lessonOrder}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
                 {g.teacherName ? (
                   <>
                     <Avatar name={g.teacherName} tone={g.teacherTone ?? undefined} size="sm" />

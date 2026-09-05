@@ -1,5 +1,5 @@
-/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
+import { configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -15,5 +15,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/shared/testing/setup.ts"],
     css: false,
+    // `e2e/*.spec.ts` — сценарии Playwright (`test` из `@playwright/test`,
+    // не vitest), запускаются отдельно через `npm run e2e`.
+    exclude: [...configDefaults.exclude, "e2e/**"],
   },
 });

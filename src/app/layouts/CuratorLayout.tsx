@@ -13,7 +13,7 @@ import { useSessionQuery } from "@/entities/session";
 import { useLogoutMutation } from "@/features/auth";
 import { paths } from "@/shared/config";
 import { cn } from "@/shared/lib";
-import { Avatar, Logo } from "@/shared/ui";
+import { Avatar, Logo, ThemeToggle } from "@/shared/ui";
 
 // Порт english-flow/src/components/CuratorShell.tsx. Гвард роли — в loader
 // маршрута (app/router/guards.ts).
@@ -80,24 +80,30 @@ export function Component() {
               <p className="text-[11px] text-muted-foreground">Куратор · Преподаватель</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="size-3.5" /> Выйти
-          </button>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="size-3.5" /> Выйти
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/85 px-4 py-3 backdrop-blur lg:hidden">
         <Logo />
-        <button
-          onClick={handleLogout}
-          aria-label="Выйти"
-          className="grid size-9 place-items-center rounded-xl border border-border text-muted-foreground"
-        >
-          <LogOut className="size-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={handleLogout}
+            aria-label="Выйти"
+            className="grid size-9 place-items-center rounded-xl border border-border text-muted-foreground"
+          >
+            <LogOut className="size-4" />
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 lg:pl-64 lg:pr-6 lg:pt-8 lg:pb-12">
@@ -105,25 +111,25 @@ export function Component() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur lg:hidden">
-        <div className="flex overflow-x-auto">
+        <div className="grid grid-cols-6">
           {nav.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               className={cn(
-                "flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 py-2 text-[10px] font-bold",
+                "flex min-w-0 flex-col items-center gap-1 px-0.5 py-2 text-center text-[9px] font-bold leading-tight",
                 isActive(pathname, item.to) ? "text-primary" : "text-muted-foreground",
               )}
             >
               <span
                 className={cn(
-                  "grid size-9 place-items-center rounded-xl",
+                  "grid size-8 shrink-0 place-items-center rounded-xl",
                   isActive(pathname, item.to) && "bg-primary-soft",
                 )}
               >
-                <item.icon className="size-[18px]" />
+                <item.icon className="size-4" />
               </span>
-              {item.label}
+              <span className="line-clamp-2">{item.label}</span>
             </Link>
           ))}
         </div>

@@ -14,10 +14,23 @@
     <title>Sozmor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Не render-blocking: если fonts.googleapis.com недоступен (нет сети,
+      firewall) страница не должна виснуть на загрузке шрифта — `tokens.css`
+      уже задаёт системный fallback в `--font-sans`.
+    -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>
