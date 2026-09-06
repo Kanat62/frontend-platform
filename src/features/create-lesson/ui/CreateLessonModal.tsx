@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/lib";
+import { Modal } from "@/shared/ui";
 import { useCreateLessonMutation } from "../model/useCreateLessonMutation";
 
 const field =
@@ -67,7 +68,7 @@ export function CreateLessonModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+    <Modal onClose={onClose}>
       <form
         onSubmit={submit}
         className="w-full max-w-md rounded-t-3xl bg-surface p-5 shadow-lift sm:rounded-3xl"
@@ -144,6 +145,6 @@ export function CreateLessonModal({
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

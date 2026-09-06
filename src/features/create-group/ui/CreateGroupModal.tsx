@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/lib";
-import { Select } from "@/shared/ui";
+import { Modal, Select } from "@/shared/ui";
 import { useTeacherOptionsQuery } from "@/entities/teacher";
 import type { LanguageCode } from "@/entities/group";
 import { useCreateGroupMutation } from "../model/useCreateGroupMutation";
@@ -52,7 +52,7 @@ export function CreateGroupModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+    <Modal onClose={onClose}>
       <form
         onSubmit={submit}
         className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-surface p-5 shadow-lift sm:rounded-3xl"
@@ -138,6 +138,6 @@ export function CreateGroupModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </form>
-    </div>
+    </Modal>
   );
 }

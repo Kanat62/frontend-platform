@@ -3,7 +3,7 @@ import { Check, Copy, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { TODAY } from "@/shared/config";
 import { ApiError, generateLogin, generatePassword } from "@/shared/lib";
-import { Select } from "@/shared/ui";
+import { Modal, Select } from "@/shared/ui";
 import { useGroupsQuery } from "@/entities/group";
 import type { CourseType, CreateStudentResponse, LanguageCode } from "@/entities/student";
 import { useCreateStudentMutation } from "../model/useCreateStudentMutation";
@@ -132,13 +132,7 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <button
-        type="button"
-        aria-label="Закрыть"
-        onClick={onClose}
-        className="fixed inset-0 h-full w-full cursor-default backdrop-blur-sm"
-      />
+    <Modal onClose={onClose} scrollable>
       {created ? (
         <CreatedPanel created={created} onClose={onClose} />
       ) : (
@@ -296,7 +290,7 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
           </div>
         </form>
       )}
-    </div>
+    </Modal>
   );
 }
 

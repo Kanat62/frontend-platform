@@ -25,3 +25,11 @@ blob-report
 # OS
 .DS_Store
 Thumbs.db
+
+# Медиа не хранится в репо — видео уроков грузятся в Bunny Stream
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.webm
+*.mkv
