@@ -39,6 +39,9 @@ function lessonEditorDto(lesson: Lesson): Dto<"LessonEditorDto"> {
     title: lesson.title,
     description: lesson.description,
     videoUrl: lesson.videoUrl,
+    // MSW-режим legacy (этап C пройден): Bunny не подключён, отдаём заглушку —
+    // видео всегда «готово», плеер играет placeholder из сида.
+    videoStatus: "ready",
     duration: lesson.duration,
     block: lesson.block,
     stats: { opened, inProgress, completed },
@@ -100,6 +103,24 @@ export const lessonsHandlers: HttpHandler[] = [
     if (!lesson) return notFound("Урок не найден");
     return HttpResponse.json(lessonEditorDto(lesson));
   }),
+
+  // Заглушка запроса на TUS-загрузку в Bunny — реального аплоада в MSW нет.
+  http.post(
+    "*/courses/products/:productId/lessons/:order([^./]+)/video/upload",
+    ({ request, params }) => {
+      const guard = requireCurator(request);
+      if (guard) return guard;
+      const order = Number(params.order);
+      const lesson = lessonsOfProduct(String(params.productId)).find((l) => l.order === order);
+      if (!lesson) return notFound("Урок не найден");
+      const response: Dto<"VideoUploadTicketDto"> = {
+        videoId: `mock-video-${lesson.id}`,
+        endpoint: "https://video.bunnycdn.com/tusupload",
+        headers: { LibraryId: "0", VideoId: `mock-video-${lesson.id}` },
+      };
+      return HttpResponse.json(response);
+    },
+  ),
 
   http.patch("*/courses/products/:productId/lessons/:order([^./]+)", async ({ request, params }) => {
     const guard = requireCurator(request);

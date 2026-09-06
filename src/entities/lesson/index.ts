@@ -6,6 +6,7 @@ export type {
   LessonDetail,
   LessonTestSummary,
   LessonEditorDetail,
+  VideoStatus,
   UpdateLessonRequest,
   CreateLessonRequest,
 } from "./model/types";

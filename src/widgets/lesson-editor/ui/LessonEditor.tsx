@@ -47,7 +47,17 @@ export function LessonEditor({ productId, order }: { productId: string; order: n
 
       <section className="surface-card space-y-2.5 p-5">
         <SectionTitle title="Видео" icon={PlayCircle} />
-        <VideoPlayer src={l.videoUrl} className="aspect-video w-full rounded-xl" />
+        {l.videoStatus === "processing" ? (
+          <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 text-center text-sm text-muted-foreground">
+            Видео загружено — идёт обработка в Bunny. Плеер появится автоматически.
+          </div>
+        ) : l.videoStatus === "failed" ? (
+          <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-destructive/40 bg-destructive/5 text-center text-sm text-destructive">
+            Обработка видео не удалась. Попробуйте загрузить файл ещё раз.
+          </div>
+        ) : (
+          <VideoPlayer src={l.videoUrl} className="aspect-video w-full rounded-xl" />
+        )}
         <ReplaceLessonVideoButton productId={productId} order={l.order} videoUrl={l.videoUrl} />
       </section>
 

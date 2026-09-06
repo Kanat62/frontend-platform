@@ -148,6 +148,39 @@ export interface paths {
         patch: operations["LessonsController_update"];
         trace?: never;
     };
+    "/courses/products/{productId}/lessons/{order}/video/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["LessonsController_requestVideoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/bunny/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Webhook Bunny Stream: обновляет videoStatus урока по VideoGuid. */
+        post: operations["MediaController_webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/dashboard": {
         parameters: {
             query?: never;
@@ -947,14 +980,38 @@ export interface components {
             title: string;
             description: string;
             videoUrl: string;
+            /**
+             * @description processing → редактор показывает «идёт обработка», плеер выключен.
+             * @enum {string}
+             */
+            videoStatus: "none" | "processing" | "ready" | "failed";
             duration: string;
             block: string;
             stats: components["schemas"]["LessonStatsDto"];
+        };
+        VideoUploadTicketDto: {
+            /** @description GUID созданного видео в Bunny. */
+            videoId: string;
+            /** @description TUS-эндпоинт Bunny. */
+            endpoint: string;
+            /** @description Заголовки для tus-js-client (AuthorizationSignature/Expire, LibraryId, VideoId). */
+            headers: {
+                [key: string]: string;
+            };
         };
         UpdateLessonRequestDto: {
             title?: string;
             description?: string;
             videoUrl?: string;
+        };
+        BunnyWebhookDto: {
+            /** @description GUID видео в библиотеке Bunny. */
+            VideoGuid: string;
+            /** @description Числовой статус: 3/4 — готово, 5 — ошибка. */
+            Status: number;
+        };
+        BunnyWebhookAckDto: {
+            ok: boolean;
         };
         LessonSummaryDto: {
             order: number;
@@ -2003,6 +2060,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LessonEditorDto"];
+                };
+            };
+        };
+    };
+    LessonsController_requestVideoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+                order: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoUploadTicketDto"];
+                };
+            };
+        };
+    };
+    MediaController_webhook: {
+        parameters: {
+            query: {
+                key: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BunnyWebhookDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BunnyWebhookAckDto"];
                 };
             };
         };

@@ -32,6 +32,11 @@ export function lessonEditorQueryOptions(productId: string, order: number) {
     queryKey: qk.lessons.editor(productId, order),
     queryFn: () => apiClient.get<LessonEditorDetail>(`/courses/products/${productId}/lessons/${order}`),
     enabled: Boolean(productId),
+    // Пока Bunny перекодирует залитое видео — опрашиваем статус. Закрывает и dev
+    // (webhook снаружи недоступен), и задержку кодирования в проде. Сам
+    // выключается, как только videoStatus уходит из "processing".
+    refetchInterval: (query) =>
+      query.state.data?.videoStatus === "processing" ? 5000 : false,
   });
 }
 
