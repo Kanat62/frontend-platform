@@ -4,9 +4,25 @@ import { cn } from "@/shared/lib";
 
 // Порт english-flow/src/components/shared.tsx (VideoPlayer).
 // <video controls playsInline preload="metadata"> — TЗ §11.2 (lazy-load видео).
-// HLS (Bunny отдаёт .m3u8): в Safari/iOS играет нативно, в Chrome/Firefox —
-// через hls.js. Кастомный UI и трекинг прогресса (onTimeUpdate) не меняются —
-// hls.js лишь «скармливает» байты в тот же <video>.
+//
+// HLS: Bunny отдаёт мастер-плейлист .m3u8 с ОТНОСИТЕЛЬНЫМИ ссылками на
+// <res>/video.m3u8 и .ts-сегменты — без токена. Подписанный URL несёт
+// `?token=..&expires=..&token_path=/<videoId>/`; тот же query-string нужно
+// дописать КО ВСЕМ дочерним запросам, иначе Bunny вернёт 403 и плеер «молчит».
+// Делаем это кастомным лоадером hls.js. Кастомный UI и onTimeUpdate не меняются.
+
+function makeBunnyLoader(authQuery: string) {
+  const Base = Hls.DefaultConfig.loader as unknown as { new (config: unknown): Record<string, unknown> };
+  return class BunnyLoader extends Base {
+    load(context: { url: string }, config: unknown, callbacks: unknown) {
+      if (authQuery && !context.url.includes("token=")) {
+        context.url += (context.url.includes("?") ? "&" : "?") + authQuery;
+      }
+      // @ts-expect-error — вызываем метод базового XHR-лоадера hls.js
+      super.load(context, config, callbacks);
+    }
+  } as unknown as typeof Hls.DefaultConfig.loader;
+}
 
 export function VideoPlayer({
   src,
@@ -29,11 +45,14 @@ export function VideoPlayer({
     const video = ref.current;
     if (!video || !src) return;
 
-    const isHls = src.includes(".m3u8");
-    const nativeHls = video.canPlayType("application/vnd.apple.mpegurl") !== "";
+    const [path, query = ""] = src.split("?");
+    const isHls = path.endsWith(".m3u8");
 
-    if (isHls && !nativeHls && Hls.isSupported()) {
-      const hls = new Hls({ maxBufferLength: 30 });
+    if (isHls && Hls.isSupported()) {
+      const hls = new Hls({
+        maxBufferLength: 30,
+        loader: query ? makeBunnyLoader(query) : Hls.DefaultConfig.loader,
+      });
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.ERROR, (_, data) => {
@@ -42,7 +61,8 @@ export function VideoPlayer({
       return () => hls.destroy();
     }
 
-    // Нативный HLS (Safari/iOS) либо обычный mp4/webm.
+    // Нативный HLS (Safari/iOS до 17.1) либо обычный mp4/webm. Safari сам
+    // прокидывает query-string мастер-плейлиста в дочерние запросы.
     video.src = src;
     return () => {
       video.removeAttribute("src");
