@@ -65,20 +65,31 @@ async function rawFetch(path: string, init: RequestOptions): Promise<Response> {
   return res;
 }
 
-let refreshPromise: Promise<string | null> | null = null;
+/**
+ * Итог попытки refresh:
+ * - `string` — новый access-токен;
+ * - `null` — сессия недействительна (нужен ре-логин), токен чистим;
+ * - `"retry-later"` — временный сбой (429 троттлинг / 5xx / сеть): токен НЕ трогаем,
+ *   проваливаем только текущий запрос — следующий вызов восстановит сессию.
+ */
+type RefreshResult = string | null | "retry-later";
+
+let refreshPromise: Promise<RefreshResult> | null = null;
 
 /** Ротация по refresh-cookie — не более одного запроса в моменте (BACKEND.md §5.1). */
-function refreshAccessToken(): Promise<string | null> {
+function refreshAccessToken(): Promise<RefreshResult> {
   refreshPromise ??= (async () => {
     try {
       const res = await rawFetch("/auth/refresh", { method: "POST", skipAuth: true });
-      if (!res.ok) return null;
-      const data = (await safeJson(res)) as Dto<"RefreshResponseDto"> | null;
-      if (!data?.accessToken) return null;
-      setAccessToken(data.accessToken);
-      return data.accessToken;
+      if (res.ok) {
+        const data = (await safeJson(res)) as Dto<"RefreshResponseDto"> | null;
+        if (!data?.accessToken) return null;
+        setAccessToken(data.accessToken);
+        return data.accessToken;
+      }
+      return res.status === 429 || res.status >= 500 ? "retry-later" : null;
     } catch {
-      return null;
+      return "retry-later";
     }
   })().finally(() => {
     refreshPromise = null;
@@ -93,11 +104,12 @@ export async function request<TResponse = unknown>(
   let res = await rawFetch(path, init);
 
   if (res.status === 401 && !init.skipAuth && path !== "/auth/refresh") {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
+    const outcome = await refreshAccessToken();
+    if (outcome && outcome !== "retry-later") {
       res = await rawFetch(path, init);
     } else {
-      clearAccessToken();
+      // `null` — сессия мертва, чистим токен; `"retry-later"` — токен оставляем.
+      if (outcome === null) clearAccessToken();
       throw normalizeHttpError(401, await safeJson(res));
     }
   }
