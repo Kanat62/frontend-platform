@@ -8,8 +8,7 @@ import { cn } from "@/shared/lib";
 // HLS: Bunny отдаёт подписанный URL вида
 //   https://<host>/bcdn_token=..&expires=..&token_path=../<videoId>/playlist.m3u8
 // Токен — сегмент ПУТИ (не query), поэтому и hls.js, и нативный HLS в Safari
-// сохраняют его при резолве относительных ссылок на <res>/video.m3u8 и .ts —
-// кастомный лоадер не нужен. Кастомный UI и onTimeUpdate не меняются.
+// сохраняют его при резолве относительных ссылок на <res>/video.m3u8 и .ts.
 
 export function VideoPlayer({
   src,
@@ -27,6 +26,11 @@ export function VideoPlayer({
   onEnded?: (e: SyntheticEvent<HTMLVideoElement>) => void;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  // Колбэки — через ref, чтобы эффект инициализации hls.js зависел ТОЛЬКО от src.
+  // Иначе нестабильная ссылка onError пересоздаёт Hls на каждый ре-рендер и
+  // проигрывание не успевает начаться.
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   useEffect(() => {
     const video = ref.current;
@@ -36,11 +40,11 @@ export function VideoPlayer({
 
     if (isHls && Hls.isSupported()) {
       const hls = new Hls({ maxBufferLength: 30 });
-      hls.loadSource(src);
-      hls.attachMedia(video);
       hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) onError?.();
+        if (data.fatal) onErrorRef.current?.();
       });
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(src));
       return () => hls.destroy();
     }
 
@@ -50,7 +54,7 @@ export function VideoPlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, onError]);
+  }, [src]);
 
   return (
     <div className={cn("relative overflow-hidden bg-black", className)}>
