@@ -629,6 +629,22 @@ export interface paths {
         patch: operations["StudentsController_updateGroup"];
         trace?: never;
     };
+    "/students/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StudentsController_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/students/{id}/open-lesson": {
         parameters: {
             query?: never;
@@ -1421,6 +1437,7 @@ export interface components {
         };
         StudentOverviewDto: {
             login: string;
+            password: string | null;
             phone: string;
             age: number | null;
             city: string;
@@ -1505,6 +1522,10 @@ export interface components {
         };
         UpdateStudentGroupRequestDto: {
             groupId: string | null;
+        };
+        ResetStudentPasswordResponseDto: {
+            login: string;
+            password: string;
         };
         OpenCloseLessonRequestDto: {
             order: number;
@@ -2813,6 +2834,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentHeaderDto"];
+                };
+            };
+        };
+    };
+    StudentsController_resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetStudentPasswordResponseDto"];
                 };
             };
         };

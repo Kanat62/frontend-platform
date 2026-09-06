@@ -7,6 +7,7 @@ import { SectionTitle, Select } from "@/shared/ui";
 import { PaymentPill, useStudentOverviewQuery, type CourseType } from "@/entities/student";
 import { useGroupsQuery } from "@/entities/group";
 import { useAssignStudentToGroupMutation } from "@/features/assign-student-to-group";
+import { StudentCredentials } from "@/features/reset-student-password";
 
 // Порт вкладки «Обзор» из curator.students.$id.tsx.
 export function OverviewTab({ studentId, language, type }: { studentId: string; language: string; type: CourseType }) {
@@ -28,7 +29,6 @@ export function OverviewTab({ studentId, language, type }: { studentId: string; 
 
   const o = overview.data;
   const rows: [string, string][] = [
-    ["Логин", `@${o.login}`],
     ["Телефон", o.phone || "—"],
     ["Возраст", o.age ? String(o.age) : "—"],
     ["Город", o.city || "—"],
@@ -40,7 +40,12 @@ export function OverviewTab({ studentId, language, type }: { studentId: string; 
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      <section>
+      <section className="space-y-4">
+        <div>
+          <SectionTitle title="Доступ ученика" />
+          <StudentCredentials studentId={studentId} login={o.login} password={o.password} />
+        </div>
+
         <SectionTitle title="Кто и что купил" />
         <div className="surface-card divide-y divide-border overflow-hidden text-sm">
           {rows.map(([l, v]) => (

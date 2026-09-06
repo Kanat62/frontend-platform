@@ -14,6 +14,7 @@ export type {
   StudentProgress,
   CreateStudentRequest,
   CreateStudentResponse,
+  ResetStudentPasswordResponse,
   BulkUpdateStudentsRequest,
   UpdateStudentRequest,
   UpdateStudentAccessRequest,

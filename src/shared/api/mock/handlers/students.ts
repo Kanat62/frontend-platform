@@ -224,6 +224,8 @@ export const studentsHandlers: HttpHandler[] = [
 
     const response: Dto<"StudentOverviewDto"> = {
       login: student.login,
+      // MSW legacy: пароли в моках не храним, отдаём заглушку.
+      password: `${student.login}-pass`,
       phone: student.phone,
       age: student.age,
       city: student.city,

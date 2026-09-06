@@ -11,6 +11,7 @@ export type StudentPractice = Dto<"StudentPracticeDto">;
 export type StudentProgress = Dto<"StudentProgressDto">;
 export type CreateStudentRequest = Dto<"CreateStudentRequestDto">;
 export type CreateStudentResponse = Dto<"CreateStudentResponseDto">;
+export type ResetStudentPasswordResponse = Dto<"ResetStudentPasswordResponseDto">;
 export type BulkUpdateStudentsRequest = Dto<"BulkUpdateStudentsRequestDto">;
 export type UpdateStudentRequest = Dto<"UpdateStudentRequestDto">;
 export type UpdateStudentAccessRequest = Dto<"UpdateStudentAccessRequestDto">;
