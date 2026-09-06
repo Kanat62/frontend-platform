@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, ChevronRight, Clock3, Search, Video } from "lucide-react";
+import { BookOpen, ChevronRight, Clock3, Plus, Search, Video } from "lucide-react";
 import { paths } from "@/shared/config";
 import { EmptyState, SectionTitle } from "@/shared/ui";
 import { useLessonCatalogQuery } from "@/entities/program";
+import { CreateLessonModal } from "@/features/create-lesson";
 
 // Порт «Уроки» (поиск + список) из curator.course.index.tsx (CuratorCourse).
-export function LessonCatalog() {
-  const catalog = useLessonCatalogQuery();
+export function LessonCatalog({ productId }: { productId: string }) {
+  const catalog = useLessonCatalogQuery(productId);
   const [query, setQuery] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const list = useMemo(
     () =>
@@ -17,6 +19,15 @@ export function LessonCatalog() {
       ),
     [catalog.data, query],
   );
+
+  // Блоки продукта (в порядке появления в каталоге) — для подсказок и дефолта
+  // в форме создания урока. Новый урок по умолчанию попадает в последний блок.
+  const blocks = useMemo(() => {
+    const seen: string[] = [];
+    for (const l of catalog.data ?? []) if (!seen.includes(l.block)) seen.push(l.block);
+    return seen;
+  }, [catalog.data]);
+  const lastBlock = blocks.at(-1) ?? "";
 
   return (
     <div className="space-y-3">
@@ -30,7 +41,26 @@ export function LessonCatalog() {
         />
       </div>
 
-      <SectionTitle title="Уроки" icon={BookOpen} />
+      <div className="flex items-center justify-between gap-3">
+        <SectionTitle title="Уроки" icon={BookOpen} />
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl gradient-primary px-3.5 py-2 text-xs font-bold text-primary-foreground shadow-glow"
+        >
+          <Plus className="size-4" /> Создать урок
+        </button>
+      </div>
+
+      {creating && (
+        <CreateLessonModal
+          productId={productId}
+          blocks={blocks}
+          defaultBlock={lastBlock}
+          onClose={() => setCreating(false)}
+        />
+      )}
+
       {catalog.isPending ? (
         <div className="h-64 animate-pulse rounded-3xl bg-muted/40" />
       ) : catalog.isError ? (
@@ -47,7 +77,7 @@ export function LessonCatalog() {
           {list.map((l) => (
             <Link
               key={l.order}
-              to={paths.curator.lessonEditor(l.order)}
+              to={paths.curator.lessonEditor(productId, l.order)}
               className="flex items-center gap-3 px-4 py-3.5 transition hover:bg-muted/30"
             >
               <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted text-xs font-extrabold text-muted-foreground">

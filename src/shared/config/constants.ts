@@ -9,9 +9,6 @@ export const COMPLETE_THRESHOLD = 0.9;
 /** Таймзона школы. TЗ §6.14. */
 export const SCHOOL_TZ = "Asia/Bishkek";
 
-/** Всего уроков в программе. TЗ §4.2. */
-export const LESSON_COUNT = 54;
-
 /** Стандартное видео уроков в сиде (TЗ §4.3) — «Заменить видео» сбрасывается на него. */
 export const DEFAULT_LESSON_VIDEO_URL = "/Video%20Project%201.mp4";
 

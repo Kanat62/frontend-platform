@@ -24,6 +24,7 @@ describe("GET /groups", () => {
   it("computes the stage (month/level/lessonOrder) from currentLesson", async () => {
     const res = await apiClient.get<Dto<"GroupsListDto">>("/groups");
     const g = res.items.find((x) => x.id === "g-en-0824")!;
+    expect(g.courseProductId).toBe("en-group-6mo");
     expect(g.lessonOrder).toBe(4);
     expect(g.month).toBe(1);
     expect(g.teacherName).toBeTruthy();
@@ -42,7 +43,7 @@ describe("GET /groups/:id", () => {
 });
 
 describe("POST /groups/:id/publish-lesson и unpublish-lesson — tx (BACKEND.md §7.1)", () => {
-  it("publish opens the lesson to active students only, up to max(current, order)", async () => {
+  it("publish raises openedUpTo for active students; тест-гейт всё равно ведёт по порядку", async () => {
     const before = await apiClient.get<Dto<"GroupDetailDto">>("/groups/g-en-0824");
     expect(before.lessonOrder).toBe(4);
 
@@ -53,7 +54,10 @@ describe("POST /groups/:id/publish-lesson и unpublish-lesson — tx (BACKEND.md
 
     const kanatLearning = await apiClient.get<Dto<"StudentLearningDto">>("/students/s1/learning");
     expect(kanatLearning.openedUpTo).toBe(6);
-    expect(kanatLearning.lessons.find((l) => l.order === 6)?.state).toBe("available");
+    // Группе подняли потолок до 6, но kanat идёт по порядку: фронтир — урок 3,
+    // урок 6 закрыт, пока не пройдены 3–5 (тест-гейт / последовательность).
+    expect(kanatLearning.lessons.find((l) => l.order === 3)?.state).toBe("available");
+    expect(kanatLearning.lessons.find((l) => l.order === 6)?.state).toBe("locked");
 
     // Publishing a lower order than current is a no-op (max(current, order)).
     const noop = await apiClient.post<Dto<"GroupSummaryDto">>("/groups/g-en-0824/publish-lesson", { order: 3 });
@@ -92,6 +96,7 @@ describe("POST /groups — teacher conflict guard on create", () => {
     await expect(
       apiClient.post("/groups", {
         language: "en",
+        durationMonths: 6,
         startDate: "2026-10-05",
         practiceStart: "20:00", // t1 already has g-en-0824 at 20:00
         practiceEnd: "21:00",
@@ -101,9 +106,10 @@ describe("POST /groups — teacher conflict guard on create", () => {
     ).rejects.toMatchObject({ status: 400 });
   });
 
-  it("creates a group and derives its code/name", async () => {
+  it("creates a group and derives its code/name/courseProductId from the chosen tariff", async () => {
     const created = await apiClient.post<Dto<"GroupSummaryDto">>("/groups", {
       language: "ru",
+      durationMonths: 3,
       startDate: "2026-10-05",
       practiceStart: "19:00",
       practiceEnd: "20:00",
@@ -112,6 +118,7 @@ describe("POST /groups — teacher conflict guard on create", () => {
     });
     expect(created.code).toMatch(/^RU-\d{2}$/);
     expect(created.status).toBe("recruiting");
+    expect(created.courseProductId).toBe("ru-group-3mo");
   });
 });
 

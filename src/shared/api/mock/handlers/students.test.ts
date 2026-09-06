@@ -51,6 +51,7 @@ describe("POST /students", () => {
         city: "",
         phone: "",
         login: "kanat", // уже занят
+        password: "abcde",
         language: "en",
         type: "INDIVIDUAL",
         startDate: "2026-09-10",
@@ -69,6 +70,7 @@ describe("POST /students", () => {
       city: "",
       phone: "",
       login: "test-e2e-student",
+      password: "swxyz",
       language: "en",
       type: "INDIVIDUAL",
       startDate: "2026-09-10",
@@ -79,7 +81,8 @@ describe("POST /students", () => {
       paid: null,
     });
     expect(created.login).toBe("test-e2e-student");
-    expect(created.password).toMatch(/^[a-z]{5}$/);
+    // Пароль с формы возвращается как есть (сервер только хеширует).
+    expect(created.password).toBe("swxyz");
 
     const header = await apiClient.get<Dto<"StudentHeaderDto">>(`/students/${created.id}`);
     expect(header.firstName).toBe("Тест");

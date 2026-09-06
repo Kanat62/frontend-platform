@@ -1,9 +1,18 @@
 import { http, HttpResponse, type HttpHandler } from "msw";
 import type { Dto } from "@/shared/api/schema";
 import { db } from "../db";
-import { badRequest, notFound, requireCurator } from "../context";
-import { LANGUAGES, groupName, nextGroupCode, type Group } from "../seed-data/mock-data";
+import { badRequest, lessonsOfProduct, notFound, productById, requireCurator } from "../context";
 import {
+  LANGUAGES,
+  groupName,
+  nextGroupCode,
+  productIdFor,
+  type Group,
+  type Meeting,
+} from "../seed-data/mock-data";
+import { meetingDto } from "./meetings";
+import {
+  currentLessonOrder,
   effectiveAccessStatus,
   groupHealth,
   groupStage,
@@ -13,19 +22,23 @@ import {
   studentsInGroup,
   teacherGroupConflict,
   teacherOf,
-  currentLessonOrder,
 } from "../domain";
 
 /** `groups` + `progress` (роль C) — BACKEND.md §7.1, §12. */
 
+function stageOf(group: Group) {
+  return groupStage(group, lessonsOfProduct(group.courseProductId), productById(group.courseProductId)!);
+}
+
 function groupSummary(group: Group): Dto<"GroupSummaryDto"> {
-  const stage = groupStage(group, db.lessons);
+  const stage = stageOf(group);
   const teacher = teacherOf(db.teachers, group.teacherId);
   return {
     id: group.id,
     code: group.code,
     name: group.name,
     language: group.language,
+    courseProductId: group.courseProductId,
     status: group.status,
     startDate: group.startDate,
     endDate: group.endDate,
@@ -81,7 +94,7 @@ export const groupsHandlers: HttpHandler[] = [
 
     const start = new Date(body.startDate);
     const end = new Date(start);
-    end.setMonth(end.getMonth() + 6);
+    end.setMonth(end.getMonth() + body.durationMonths);
     const code = nextGroupCode(db.groups, body.language);
 
     const group: Group = {
@@ -89,6 +102,8 @@ export const groupsHandlers: HttpHandler[] = [
       code,
       name: groupName(code, body.language, body.startDate, body.practiceStart),
       language: body.language,
+      durationMonths: body.durationMonths,
+      courseProductId: productIdFor(body.language, "GROUP", body.durationMonths),
       startDate: body.startDate,
       endDate: end.toISOString().slice(0, 10),
       practiceStart: body.practiceStart,
@@ -109,9 +124,10 @@ export const groupsHandlers: HttpHandler[] = [
     const group = db.groups.find((g) => g.id === params.id);
     if (!group) return notFound("Группа не найдена");
 
-    const stage = groupStage(group, db.lessons);
+    const stage = stageOf(group);
     const health = groupHealth(db.students, group.id);
     const roster = studentsInGroup(db.students, group.id);
+    const lessons = lessonsOfProduct(group.courseProductId);
     const recentMeetings = db.meetings
       .filter((m) => m.groupId === group.id)
       .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
@@ -138,8 +154,8 @@ export const groupsHandlers: HttpHandler[] = [
         firstName: s.firstName,
         lastName: s.lastName,
         avatarTone: s.avatarTone,
-        currentLessonOrder: currentLessonOrder(s),
-        progressPct: progressOf(s),
+        currentLessonOrder: currentLessonOrder(s, lessons),
+        progressPct: progressOf(s, lessons),
         lastActivity: s.lastActivity,
         accessStatus: effectiveAccessStatus(s),
         idleBucket: idleBucketOf(s),
@@ -187,8 +203,9 @@ export const groupsHandlers: HttpHandler[] = [
     const group = db.groups.find((g) => g.id === params.id);
     if (!group) return notFound("Группа не найдена");
 
+    const lessons = lessonsOfProduct(group.courseProductId);
     const body = (await request.json()) as Dto<"OpenCloseLessonRequestDto">;
-    if (body.order < 1 || body.order > db.lessons.length) return badRequest("Некорректный номер урока");
+    if (body.order < 1 || body.order > lessons.length) return badRequest("Некорректный номер урока");
 
     group.currentLesson = Math.max(group.currentLesson, body.order);
     for (const student of db.students) {
@@ -225,10 +242,11 @@ export const groupsHandlers: HttpHandler[] = [
     const meetUrl = body.meetUrl || group.meetUrl;
     if (!meetUrl) return badRequest("Добавьте ссылку Google Meet (в группе или в форме)");
 
-    const stage = groupStage(group, db.lessons);
+    const stage = stageOf(group);
     const [h, min] = group.practiceStart.split(":");
-    db.meetings.push({
+    const meeting: Meeting = {
       id: `m-${Date.now()}`,
+      courseProductId: group.courseProductId,
       lessonOrder: group.currentLesson,
       studentId: "group",
       groupId: group.id,
@@ -239,7 +257,8 @@ export const groupsHandlers: HttpHandler[] = [
       meetUrl,
       type: "GROUP",
       status: "scheduled",
-    });
-    return HttpResponse.json(groupSummary(group), { status: 201 });
+    };
+    db.meetings.push(meeting);
+    return HttpResponse.json(meetingDto(meeting), { status: 201 });
   }),
 ];

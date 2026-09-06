@@ -1,9 +1,11 @@
-import { Layers } from "lucide-react";
+import { Link } from "react-router";
+import { ChevronRight, Layers } from "lucide-react";
+import { paths } from "@/shared/config";
 import { SectionTitle, LangPill } from "@/shared/ui";
 import { useCourseProductsQuery } from "@/entities/course-product";
-import { PreviewVideoPanel } from "@/features/set-preview-video";
 
-// Порт «Продукты» + «Тестовое видео» из curator.course.index.tsx (CuratorCourse).
+// Порт «Продукты» из curator.course.index.tsx (CuratorCourse). Каждая карточка
+// ведёт на экран уроков именно этой категории (§4.1/§4.2 TЗ) — у каждой свой контент.
 export function CourseProductsPanel() {
   const products = useCourseProductsQuery();
 
@@ -16,14 +18,17 @@ export function CourseProductsPanel() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {(products.data ?? []).map((c) => (
-              <div key={c.id} className="surface-card space-y-2 p-4">
+              <Link
+                key={c.id}
+                to={paths.curator.courseProduct(c.id)}
+                className="surface-card space-y-2 p-4 transition hover:border-primary/40 hover:shadow-glow"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-extrabold">{c.title}</p>
                   <LangPill code={c.language} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {c.format === "GROUP" ? "Групповой" : "Индивидуальный"} · {c.durationMonths} мес ·{" "}
-                  {c.price.toLocaleString("ru")} {c.currency}
+                  {c.format === "GROUP" ? "Групповой" : "Индивидуальный"} · {c.durationMonths} мес
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {c.features.map((feat) => (
@@ -32,24 +37,17 @@ export function CourseProductsPanel() {
                     </span>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Программа: {c.levelPlan.map((p) => `M${p.month}→${p.level}`).join(" · ")}
-                </p>
-              </div>
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <p className="text-[11px] text-muted-foreground">
+                    Программа: {c.levelPlan.map((p) => `M${p.month}→${p.level}`).join(" · ")}
+                  </p>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </div>
+              </Link>
             ))}
           </div>
         )}
       </section>
-
-      <div className="surface-card flex items-start gap-3 p-4">
-        <Layers className="mt-0.5 size-4 shrink-0 text-primary" />
-        <p className="text-xs text-muted-foreground">
-          Здесь готовится общий контент курса — тексты уроков, видео и тесты. Доступ к урокам не
-          выдаётся на этом экране: он открывается каждой группе отдельно на экране группы.
-        </p>
-      </div>
-
-      <PreviewVideoPanel />
     </div>
   );
 }

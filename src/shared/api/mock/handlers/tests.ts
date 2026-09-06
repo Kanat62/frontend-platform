@@ -1,14 +1,27 @@
 import { http, HttpResponse, type HttpHandler } from "msw";
 import type { Dto, TestLockedReason } from "@/shared/api/schema";
 import { db } from "../db";
-import { badRequest, currentStudent, forbidden, notFound, requireActiveAccess, requireCurator, unauthorized } from "../context";
+import {
+  badRequest,
+  currentStudent,
+  forbidden,
+  lessonsOfProduct,
+  notFound,
+  productIdOfStudent,
+  requireActiveAccess,
+  requireCurator,
+  testsOfProduct,
+  unauthorized,
+} from "../context";
 import type { LessonTest, TestAttempt } from "../seed-data/mock-data";
 import { activeAttempt, bestAttempt, lessonState, scoreAttempt, testAvailability, testForLesson } from "../domain";
 
 /**
  * `/me/tests/:order`, `/me/attempts/:id` — BACKEND.md §7.3, §12. Скоринг и
  * `passed` считает только сервер (TЗ, инвариант 5); попытка `in_progress` не
- * отдаёт `isCorrect` — разбор ответов доступен только после `submit`.
+ * отдаёт `isCorrect` — разбор ответов доступен только после `submit`. `order`
+ * резолвится в рамках продукта студента (BACKEND.md §4.1) — `:order` в `/me/*`
+ * не задаёт продукт напрямую, это делает сервер по акторy.
  */
 
 function toTakingDto(attempt: TestAttempt, test: LessonTest): Dto<"TestAttemptDto"> {
@@ -55,6 +68,7 @@ function attemptDto(attempt: TestAttempt, test: LessonTest): Dto<"TestAttemptDto
 function editorDto(test: LessonTest): Dto<"TestEditorDto"> {
   return {
     id: test.id,
+    lessonId: test.lessonId,
     lessonOrder: test.lessonOrder,
     title: test.title,
     timeLimitSec: test.timeLimitSec,
@@ -96,16 +110,19 @@ export const testsHandlers: HttpHandler[] = [
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const tests = testsOfProduct(productId);
     const order = Number(params.order);
     // `publishedOnly=false` — нужно отличить «теста нет вовсе» (404) от «есть, но не опубликован» (locked).
-    const test = testForLesson(db.tests, order, false);
+    const test = testForLesson(tests, order, false);
     if (!test) return notFound("Тест не найден");
 
     for (const a of db.attempts) {
       if (a.testId === test.id && a.studentId === student.id) ensureFresh(a, test);
     }
 
-    const availability = testAvailability(student, test, db.attempts);
+    const availability = testAvailability(student, lessons, test, db.attempts);
     const active = activeAttempt(db.attempts, student.id, test.id);
     const best = bestAttempt(db.attempts, student.id, test.id);
 
@@ -117,7 +134,7 @@ export const testsHandlers: HttpHandler[] = [
       availability,
       ...(availability === "locked"
         ? {
-            lockedReason: (lessonState(student, order) !== "completed"
+            lockedReason: (lessonState(student, lessons, order) !== "completed"
               ? "lesson_not_completed"
               : "not_published") satisfies TestLockedReason,
           }
@@ -134,10 +151,13 @@ export const testsHandlers: HttpHandler[] = [
     const guard = requireActiveAccess(student);
     if (guard) return guard;
 
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const tests = testsOfProduct(productId);
     const order = Number(params.order);
-    const test = testForLesson(db.tests, order);
+    const test = testForLesson(tests, order);
     if (!test) return notFound("Тест не найден");
-    if (lessonState(student, order) !== "completed") return forbidden("Тест пока недоступен");
+    if (lessonState(student, lessons, order) !== "completed") return forbidden("Тест пока недоступен");
 
     for (const a of db.attempts) {
       if (a.testId === test.id && a.studentId === student.id) ensureFresh(a, test);
@@ -150,7 +170,7 @@ export const testsHandlers: HttpHandler[] = [
     const attempt: TestAttempt = {
       id: `attempt-${Date.now()}`,
       testId: test.id,
-      lessonOrder: test.lessonOrder,
+      lessonId: test.lessonId,
       studentId: student.id,
       startedAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + test.timeLimitSec * 1000).toISOString(),
@@ -223,11 +243,10 @@ export const testsHandlers: HttpHandler[] = [
 
   /* ---------- куратор: редактор теста (BACKEND.md §12, tests) ---------- */
 
-  http.get("*/tests/:lessonOrder([^./]+)", ({ request, params }) => {
+  http.get("*/tests/lesson/:lessonId([^./]+)", ({ request, params }) => {
     const guard = requireCurator(request);
     if (guard) return guard;
-    const order = Number(params.lessonOrder);
-    const test = db.tests.find((t) => t.lessonOrder === order);
+    const test = db.tests.find((t) => t.lessonId === params.lessonId);
     return HttpResponse.json(test ? editorDto(test) : null);
   }),
 
@@ -235,14 +254,16 @@ export const testsHandlers: HttpHandler[] = [
     const guard = requireCurator(request);
     if (guard) return guard;
     const body = (await request.json()) as Dto<"CreateTestRequestDto">;
-    if (!db.lessons.some((l) => l.order === body.lessonOrder)) return badRequest("Урок не найден");
-    const existing = db.tests.find((t) => t.lessonOrder === body.lessonOrder);
+    const lesson = db.lessons.find((l) => l.id === body.lessonId);
+    if (!lesson) return badRequest("Урок не найден");
+    const existing = db.tests.find((t) => t.lessonId === body.lessonId);
     if (existing) return HttpResponse.json(editorDto(existing));
 
     const test: LessonTest = {
       id: `test-${Date.now()}`,
-      lessonOrder: body.lessonOrder,
-      title: `Тест к уроку ${body.lessonOrder}`,
+      lessonId: lesson.id,
+      lessonOrder: lesson.order,
+      title: `Тест к уроку ${lesson.order}`,
       timeLimitSec: 300,
       passingScore: 70,
       status: "draft",

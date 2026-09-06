@@ -1,5 +1,5 @@
 import type { TestAvailability } from "@/shared/api/schema";
-import type { LessonTest, Student, TestAttempt } from "../seed-data/mock-data";
+import type { Lesson, LessonTest, Student, TestAttempt } from "../seed-data/mock-data";
 import { lessonState } from "./lesson-progress";
 
 /** Порт `testForLesson`/`attemptsFor`/`activeAttempt`/`bestAttempt`/`testAvailability` из store.tsx. */
@@ -40,10 +40,11 @@ export function bestAttempt(
 
 export function testAvailability(
   student: Student,
+  lessons: Lesson[],
   test: LessonTest,
   attempts: TestAttempt[],
 ): TestAvailability {
-  if (test.status !== "published" || lessonState(student, test.lessonOrder) !== "completed") {
+  if (test.status !== "published" || lessonState(student, lessons, test.lessonOrder) !== "completed") {
     return "locked";
   }
   if (activeAttempt(attempts, student.id, test.id)) return "in_progress";

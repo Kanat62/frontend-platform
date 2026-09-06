@@ -2,7 +2,7 @@ import { http, HttpResponse, type HttpHandler } from "msw";
 import type { Dto } from "@/shared/api/schema";
 import { TODAY } from "@/shared/config";
 import { db } from "../db";
-import { notFound, requireCurator } from "../context";
+import { lessonsOfProduct, notFound, productById, requireCurator } from "../context";
 import type { Teacher } from "../seed-data/mock-data";
 import { groupStage, studentsInGroup } from "../domain";
 
@@ -106,7 +106,7 @@ export const teachersHandlers: HttpHandler[] = [
         practicesToday: practicesTodayFor(groups),
       },
       groups: groups.map((g) => {
-        const stage = groupStage(g, db.lessons);
+        const stage = groupStage(g, lessonsOfProduct(g.courseProductId), productById(g.courseProductId)!);
         return {
           id: g.id,
           name: g.name,
@@ -137,8 +137,8 @@ export const teachersHandlers: HttpHandler[] = [
     const teacher = db.teachers.find((t) => t.id === params.id);
     if (!teacher) return notFound("Преподаватель не найден");
 
-    const body = (await request.json()) as Dto<"UpdateTeacherStatusRequestDto">;
-    teacher.status = body.status;
+    const body = (await request.json()) as Dto<"UpdateTeacherRequestDto">;
+    if (body.status) teacher.status = body.status;
     return HttpResponse.json(teacherListItem(teacher));
   }),
 ];

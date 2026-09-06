@@ -42,9 +42,9 @@ export function dayAgenda(
 ): DayAgendaItem[] {
   const items: DayAgendaItem[] = [];
 
-  for (const [orderStr, completedDate] of Object.entries(student.completedAt ?? {})) {
+  for (const [lessonIdKey, completedDate] of Object.entries(student.completedAt ?? {})) {
     if (completedDate !== date) continue;
-    const lesson = lessons.find((l) => l.order === Number(orderStr));
+    const lesson = lessons.find((l) => l.id === lessonIdKey);
     if (lesson) {
       items.push({
         kind: "lesson",
@@ -118,6 +118,8 @@ export interface WeekPlanDay {
   topic: string;
   meta: string;
   meetUrl?: string;
+  /** Время начала практики "HH:mm" — для окна подключения на клиенте. */
+  startTime?: string;
   lessonOrder?: number;
 }
 
@@ -150,7 +152,7 @@ export function weekPlan(
   week: string[],
   today: string = TODAY,
 ): WeekPlanDay[] {
-  const currentOrder = currentLessonOrder(student);
+  const currentOrder = currentLessonOrder(student, lessons);
   const lessonAt = (offset: number) =>
     lessons.find((l) => l.order === currentOrder + offset) ?? lessons.find((l) => l.order === currentOrder);
   const groupRoom = meetings.find((m) => m.meetUrl)?.meetUrl;
@@ -182,6 +184,7 @@ export function weekPlan(
         : `Видео · ${lesson ? Number.parseInt(lesson.duration, 10) : 12} мин`;
 
     const room = slot.kind === "practice" ? (meeting?.meetUrl ?? groupRoom) : undefined;
+    const startTime = slot.kind === "practice" ? (meeting?.startTime ?? "21:00") : undefined;
 
     return {
       date,
@@ -192,6 +195,7 @@ export function weekPlan(
       topic,
       meta,
       ...(room ? { meetUrl: room } : {}),
+      ...(startTime ? { startTime } : {}),
       ...(!isRest && lesson ? { lessonOrder: lesson.order } : {}),
     };
   });

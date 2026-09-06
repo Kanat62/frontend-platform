@@ -52,11 +52,11 @@ export const qk = {
     range: (range: string) => ["meetings", range] as const,
   },
   lessons: {
-    catalog: ["lessons", "catalog"] as const,
-    editor: (order: number) => ["lessons", order, "editor"] as const,
+    catalog: (productId: string) => ["lessons", productId, "catalog"] as const,
+    editor: (productId: string, order: number) => ["lessons", productId, order, "editor"] as const,
   },
   tests: {
-    editor: (lessonOrder: number) => ["tests", lessonOrder, "editor"] as const,
+    editor: (lessonId: string) => ["tests", lessonId, "editor"] as const,
   },
   courses: {
     products: ["courses", "products"] as const,

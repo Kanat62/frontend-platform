@@ -14,14 +14,15 @@ export function useTestIntroQuery(order: number) {
   return useQuery(testIntroQueryOptions(order));
 }
 
-/** `GET /tests/:lessonOrder` (роль C) — тест урока для редактора, `null` если ещё не создан. */
-export function testEditorQueryOptions(lessonOrder: number) {
+/** `GET /tests/lesson/:lessonId` (роль C) — тест урока для редактора, `null` если ещё не создан. */
+export function testEditorQueryOptions(lessonId: string) {
   return queryOptions({
-    queryKey: qk.tests.editor(lessonOrder),
-    queryFn: () => apiClient.get<TestEditor | null>(`/tests/${lessonOrder}`),
+    queryKey: qk.tests.editor(lessonId),
+    queryFn: () => apiClient.get<TestEditor | null>(`/tests/lesson/${lessonId}`),
+    enabled: Boolean(lessonId),
   });
 }
 
-export function useTestEditorQuery(lessonOrder: number) {
-  return useQuery(testEditorQueryOptions(lessonOrder));
+export function useTestEditorQuery(lessonId: string) {
+  return useQuery(testEditorQueryOptions(lessonId));
 }

@@ -1,13 +1,16 @@
 import { Link } from "react-router";
-import { Clock3, PlayCircle } from "lucide-react";
+import { Clock3, Lock, PlayCircle } from "lucide-react";
 import { paths } from "@/shared/config";
 import { relativeDay } from "@/shared/lib";
 import type { Dto } from "@/shared/api";
+import { usePracticeJoinWindow } from "@/entities/meeting";
 import type { PreviewStep } from "../model/previewStep";
 
 // Порт NextStepCard из english-flow/src/routes/dashboard.tsx.
 
-type NextStepView = Dto<"NextStepDto"> | PreviewStep;
+/** Дискриминированный `nextStep` с бэка (`oneOf` по `kind`) плюс клиентский превью-день. */
+type NextStep = Dto<"MeDashboardDto">["nextStep"];
+type NextStepView = NextStep | PreviewStep;
 
 const BASE =
   "relative overflow-hidden rounded-3xl gradient-hero p-5 text-primary-foreground shadow-lift sm:p-7";
@@ -66,30 +69,7 @@ export function NextStepCard({ step, dayLabel }: { step: NextStepView; dayLabel?
   }
 
   if (step.kind === "practice") {
-    return (
-      <div className={BASE}>
-        {GLOW}
-        <div className="relative">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">
-            {dayLabel ?? `Сегодня практика · ${step.meeting.startTime}`}
-          </p>
-          <h3 className="mt-2 text-2xl font-extrabold sm:text-3xl">{step.meeting.title}</h3>
-          <p className="mt-1.5 max-w-md text-sm text-white/80">
-            {dayLabel ? `Google Meet · ${step.meeting.startTime}` : "Google Meet"}
-          </p>
-          <div className="mt-5">
-            <a
-              href={step.meeting.meetUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[oklch(0.42_0.19_275)] transition hover:opacity-90 active:scale-[0.99]"
-            >
-              Подключиться
-            </a>
-          </div>
-        </div>
-      </div>
-    );
+    return <PracticeStep meeting={step.meeting} dayLabel={dayLabel} />;
   }
 
   return (
@@ -107,6 +87,55 @@ export function NextStepCard({ step, dayLabel }: { step: NextStepView; dayLabel?
             ? `${relativeDay(step.nextMeeting.date)} · ${step.nextMeeting.startTime}`
             : "Куратор откроет новый урок после текущего этапа."}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function PracticeStep({
+  meeting,
+  dayLabel,
+}: {
+  meeting: Dto<"MeetingSummaryDto">;
+  dayLabel?: string;
+}) {
+  const join = usePracticeJoinWindow(meeting.startTime);
+
+  return (
+    <div className={BASE}>
+      {GLOW}
+      <div className="relative">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">
+          {dayLabel ?? `Сегодня практика · ${meeting.startTime}`}
+        </p>
+        <h3 className="mt-2 text-2xl font-extrabold sm:text-3xl">{meeting.title}</h3>
+        <p className="mt-1.5 max-w-md text-sm text-white/80">
+          {dayLabel ? `Google Meet · ${meeting.startTime}` : "Google Meet"}
+        </p>
+        <div className="mt-5">
+          {join.open ? (
+            <a
+              href={meeting.meetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[oklch(0.42_0.19_275)] transition hover:opacity-90 active:scale-[0.99]"
+            >
+              Подключиться
+            </a>
+          ) : (
+            <div>
+              <p className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold text-white/85">
+                <Clock3 className="size-3.5" /> Откроется через {join.countdown}
+              </p>
+              <span
+                aria-disabled="true"
+                className="pointer-events-none inline-flex select-none items-center gap-2 rounded-xl bg-white/25 px-5 py-3 text-sm font-bold text-white/60 blur-[1px]"
+              >
+                <Lock className="size-4" /> Подключиться
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -4,9 +4,18 @@ import { usePublishLessonForGroupMutation } from "../model/usePublishLessonForGr
 import { useUnpublishLessonForGroupMutation } from "../model/useUnpublishLessonForGroupMutation";
 import { LessonAccessToggle } from "./LessonAccessToggle";
 
-// Порт списка «Доступ к урокам» из curator.groups.$id.tsx.
-export function LessonAccessList({ groupId, currentLesson }: { groupId: string; currentLesson: number }) {
-  const catalog = useLessonCatalogQuery();
+// Порт списка «Доступ к урокам» из curator.groups.$id.tsx. Каталог — только уроки
+// продукта ЭТОЙ группы (§4.1 TЗ — у каждой категории свои уроки).
+export function LessonAccessList({
+  groupId,
+  courseProductId,
+  currentLesson,
+}: {
+  groupId: string;
+  courseProductId: string;
+  currentLesson: number;
+}) {
+  const catalog = useLessonCatalogQuery(courseProductId);
   const publish = usePublishLessonForGroupMutation(groupId);
   const unpublish = useUnpublishLessonForGroupMutation(groupId);
 

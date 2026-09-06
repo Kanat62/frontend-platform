@@ -6,10 +6,10 @@ import type { LessonEditorDetail } from "@/entities/lesson";
 import { useUpdateLessonMutation } from "../model/useUpdateLessonMutation";
 
 // Порт «Текст урока» из curator.course.$order.tsx (LessonEditorPage).
-export function LessonContentForm({ lesson }: { lesson: LessonEditorDetail }) {
+export function LessonContentForm({ productId, lesson }: { productId: string; lesson: LessonEditorDetail }) {
   const [title, setTitle] = useState(lesson.title);
   const [description, setDescription] = useState(lesson.description);
-  const update = useUpdateLessonMutation(lesson.order);
+  const update = useUpdateLessonMutation(productId, lesson.order);
 
   useEffect(() => {
     setTitle(lesson.title);

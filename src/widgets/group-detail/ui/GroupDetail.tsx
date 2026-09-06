@@ -3,11 +3,12 @@ import { Link } from "react-router";
 import { ArrowLeft, BookOpen, CalendarClock, Lock, Unlock, Users } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError, formatDate, formatFull, weekdayFull } from "@/shared/lib";
-import { LESSON_COUNT, paths, TODAY } from "@/shared/config";
+import { paths, TODAY } from "@/shared/config";
 import { EmptyState, Pill, ProgressBar, SectionTitle, Select } from "@/shared/ui";
 import { StudentAvatar } from "@/entities/student";
 import { GroupStatusPill, useGroupQuery, type GroupStatus } from "@/entities/group";
 import { useTeacherOptionsQuery } from "@/entities/teacher";
+import { useLessonCatalogQuery } from "@/entities/program";
 import { LessonAccessList } from "@/features/open-lesson-for-group";
 import { useUpdateGroupMutation } from "@/features/edit-group";
 import { useAssignTeacherToGroupMutation } from "@/features/assign-teacher-to-group";
@@ -25,6 +26,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   const teachers = useTeacherOptionsQuery();
   const updateGroup = useUpdateGroupMutation(groupId);
   const assignTeacher = useAssignTeacherToGroupMutation(groupId);
+  const lessonCatalog = useLessonCatalogQuery(group.data?.courseProductId ?? "");
   const [showStudents, setShowStudents] = useState(true);
 
   if (group.isPending) {
@@ -140,10 +142,14 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         <p className="text-xs text-muted-foreground">
           Уроки и тесты готовятся на экране курса. Здесь доступ открывается этой группе по мере
           прохождения программы: открытие урока открывает все предыдущие, закрытие — все
-          последующие. Открыто {Math.max(0, g.currentLesson)} / {LESSON_COUNT}.
+          последующие. Открыто {Math.max(0, g.currentLesson)} / {lessonCatalog.data?.length ?? "…"}.
         </p>
         <div className="mt-3">
-          <LessonAccessList groupId={groupId} currentLesson={g.currentLesson} />
+          <LessonAccessList
+            groupId={groupId}
+            courseProductId={g.courseProductId}
+            currentLesson={g.currentLesson}
+          />
         </div>
       </section>
 

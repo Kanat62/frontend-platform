@@ -1,9 +1,10 @@
 import { Link } from "react-router";
-import { BookOpen, Coffee, FileText, PlayCircle, Video } from "lucide-react";
+import { BookOpen, Clock3, Coffee, FileText, Lock, PlayCircle, Video } from "lucide-react";
 import type { ComponentType } from "react";
 import { paths } from "@/shared/config";
 import { cn, formatDate, weekdayShort } from "@/shared/lib";
 import type { Dto, WeekPlanKind, WeekPlanStatus } from "@/shared/api";
+import { usePracticeJoinWindow } from "@/entities/meeting";
 
 // Порт DayRow/DayAction из english-flow/src/routes/practice.tsx.
 
@@ -106,14 +107,15 @@ const BTN =
 const BTN_HOVER = "hover:border-primary/40 hover:bg-muted";
 
 function DayAction({ day }: { day: WeekPlanDay }) {
-  const { status, kind, meetUrl, lessonOrder } = day;
+  const { status, kind, meetUrl, startTime, lessonOrder } = day;
+  const join = usePracticeJoinWindow(startTime);
 
   if (kind === "rest") return null;
 
   const offClass = cn("cursor-not-allowed", status !== "locked" && "opacity-45");
 
   if (kind === "practice") {
-    if (status === "today" && meetUrl) {
+    if (status === "today" && meetUrl && join.open) {
       return (
         <a
           href={meetUrl}
@@ -123,6 +125,18 @@ function DayAction({ day }: { day: WeekPlanDay }) {
         >
           <Video className="size-4" /> Подключиться к уроку
         </a>
+      );
+    }
+    if (status === "today" && meetUrl && join.countdown) {
+      return (
+        <div className="mt-3">
+          <p className="mb-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-muted-foreground">
+            <Clock3 className="size-3" /> Откроется через {join.countdown}
+          </p>
+          <span className={cn(BTN, "cursor-not-allowed opacity-45 blur-[1px]")}>
+            <Lock className="size-4" /> Подключиться к уроку
+          </span>
+        </div>
       );
     }
     return (

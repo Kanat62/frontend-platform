@@ -18,38 +18,41 @@ export function LoginPage() {
             className="size-9 shrink-0 object-contain"
           />
           <div className="-ml-1 leading-none">
-            <div className="text-[16px] font-extrabold tracking-tight">Sozmor</div>
-            <div className="mt-1 text-[10px] font-bold tracking-wide text-white/70">Academy</div>
+            <div className="text-[16px] font-extrabold tracking-tight">
+              Sozmor
+            </div>
+            <div className="mt-1 text-[10px] font-bold tracking-wide text-white/70">
+              Academy
+            </div>
           </div>
         </div>
 
-        <div className="relative max-w-md">
+        <div className="relative max-w-md mb-5">
           <h1 className="text-5xl font-extrabold leading-[1.05]">
-            Твой английский.
-            <br />
-            <span className="text-white/70">Один экран.</span>
+            Ваш путь к языку начинается здесь.
           </h1>
-          <p className="mt-5 text-sm leading-relaxed text-white/80">
-            Теория, видео, практика в Google Meet и прогресс — без Telegram, таблиц и вопросов
-            «какой у меня сегодня урок».
+          <p className="mt-5 text-base leading-relaxed text-white/80">
+            Покажу, что изучать сегодня, помогу закрепить материал и сохраню ваш
+            прогресс, чтобы вы всегда знали, где остановились и что делать
+            дальше.
           </p>
           <div className="mt-8 space-y-3">
             {[
-              "Текущий урок открывает куратор",
-              "Практика и ссылка Meet всегда под рукой",
-              "Прогресс по 54 урокам курса",
+              "Следующий урок открывается по мере обучения",
+              "Расписание и практические занятия в одном месте",
+              "Следите за своим прогрессом в обучении",
             ].map((t) => (
-              <div key={t} className="flex items-center gap-3 text-sm font-medium text-white/90">
+              <div
+                key={t}
+                className="flex items-center gap-3 text-sm font-medium text-white/90"
+              >
                 <PlayCircle className="size-4 shrink-0" />
                 {t}
               </div>
             ))}
           </div>
         </div>
-
-        <p className="relative text-xs text-white/60">
-          Group · 6 месяцев · 15 000 сом &nbsp;•&nbsp; Individual · 1 месяц · 20 000 сом
-        </p>
+        <span></span>
       </section>
 
       <section className="flex items-center justify-center bg-background px-5 py-12">
@@ -57,9 +60,11 @@ export function LoginPage() {
           <div className="lg:hidden">
             <Logo />
           </div>
-          <h2 className="mt-8 text-2xl font-extrabold lg:mt-0">Вход в платформу</h2>
+          <h2 className="mt-8 text-2xl font-extrabold lg:mt-0">
+            Вход в платформу
+          </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Логин и пароль выдаёт куратор после оплаты.
+            Логин и пароль выдаёт куратор.
           </p>
 
           <LoginForm />

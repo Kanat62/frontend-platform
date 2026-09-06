@@ -1,5 +1,4 @@
 import { CourseProductsPanel } from "@/widgets/course-products-panel";
-import { LessonCatalog } from "@/widgets/lesson-catalog";
 
 // Порт CuratorCourse из curator.course.index.tsx.
 export function CoursePage() {
@@ -8,11 +7,11 @@ export function CoursePage() {
       <header>
         <h1 className="text-2xl font-extrabold sm:text-3xl">Курсы и контент</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Один теоретический контент — несколько форматов. Практика отличается, теория общая.
+          У каждой категории курса — свой контент и свои уроки. Выберите категорию, чтобы посмотреть и
+          отредактировать её уроки.
         </p>
       </header>
       <CourseProductsPanel />
-      <LessonCatalog />
     </div>
   );
 }

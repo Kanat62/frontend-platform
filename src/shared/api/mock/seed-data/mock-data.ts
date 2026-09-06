@@ -1,7 +1,9 @@
-// Сид-данные для MSW. Копия english-flow/src/lib/mock-data.ts (FRONTEND.md §13) —
-// единственный источник моковых данных для shared/api/mock/db.ts и handlers/*.
-// Не импортировать напрямую из entities/features/widgets — только через MSW db.
-// Тестовые данные платформы (без бэкенда).
+// Сид-данные для MSW. Копия english-flow/src/lib/mock-data.ts (FRONTEND.md §13),
+// расширенная до 6 CourseProduct (EN/RU × Group-3мес/Group-6мес/Individual-1мес),
+// каждый со своим независимым набором уроков — как backend/prisma/seed-data/*
+// (BACKEND.md §13) — единственный источник моковых данных для shared/api/mock/db.ts
+// и handlers/*. Не импортировать напрямую из entities/features/widgets — только
+// через MSW db. Тестовые данные платформы (без бэкенда).
 
 export type Role = "student" | "curator";
 export type CourseType = "GROUP" | "INDIVIDUAL";
@@ -55,6 +57,10 @@ export interface Group {
   /** Понятное человеку название, напр. «EN-01 · Английский язык · 07.09.2026 · 20:00». */
   name: string;
   language: LanguageCode;
+  /** Тариф группы (3 или 6 месяцев) — определяет и `courseProductId`, и длину программы. */
+  durationMonths: number;
+  /** Категория курса этой группы — у каждой свой независимый набор уроков (TЗ §4.1). */
+  courseProductId: string;
   startDate: string;
   endDate: string;
   /** Вечерний слот практики хранится в группе, а не в коде. */
@@ -63,7 +69,7 @@ export interface Group {
   teacherId: string | null;
   maxStudents: number;
   status: GroupStatus;
-  /** Общий текущий учебный этап группы (order урока). Прогресс ученика — отдельно. */
+  /** Общий текущий учебный этап группы (order урока её продукта). Прогресс ученика — отдельно. */
   currentLesson: number;
   meetUrl: string;
 }
@@ -77,6 +83,8 @@ export interface PaymentInfo {
 
 export interface Lesson {
   id: string;
+  /** Категория курса, которой принадлежит урок — `order` уникален только внутри неё. */
+  courseProductId: string;
   order: number;
   title: string;
   description: string;
@@ -87,6 +95,8 @@ export interface Lesson {
 
 export interface Meeting {
   id: string;
+  /** Категория курса практики — нужна, чтобы отличить урок с тем же `order` в другом продукте. */
+  courseProductId: string;
   lessonOrder: number;
   studentId: string | "group";
   /** Практика группового курса привязана к конкретной группе. */
@@ -118,6 +128,9 @@ export interface TestQuestion {
 
 export interface LessonTest {
   id: string;
+  /** Источник истины — конкретный урок конкретного продукта (BACKEND.md: `Lesson.id` FK). */
+  lessonId: string;
+  /** Денормализованный `order` урока — только для отображения (BACKEND.md §12, TestEditorDto). */
   lessonOrder: number;
   title: string;
   timeLimitSec: number;
@@ -129,7 +142,8 @@ export interface LessonTest {
 export interface TestAttempt {
   id: string;
   testId: string;
-  lessonOrder: number;
+  /** Урок, к которому относится тест — по `Lesson.id` (BACKEND.md: `TestAttempt.lessonId`). */
+  lessonId: string;
   studentId: string;
   startedAt: string; // ISO datetime
   expiresAt: string; // ISO datetime
@@ -168,10 +182,11 @@ export interface Student {
   startDate: string;
   endDate: string;
   status: AccessStatus;
-  openedUpTo: number; // максимальный открытый урок (order)
-  completed: number[]; // завершённые уроки
-  completedAt: Record<number, string>; // order -> дата завершения (YYYY-MM-DD)
-  watched: Record<number, number>; // order -> % просмотра видео (0-100)
+  openedUpTo: number; // максимальный открытый урок (order — в рамках продукта ученика)
+  /** Завершённые уроки — по `Lesson.id`, не по `order` (у разных продуктов order пересекается). */
+  completed: string[];
+  completedAt: Record<string, string>; // lessonId -> дата завершения (YYYY-MM-DD)
+  watched: Record<string, number>; // lessonId -> % просмотра видео (0-100)
   lastActivity: string;
   avatarTone: string;
   onboarded: boolean;
@@ -179,7 +194,12 @@ export interface Student {
   payment: PaymentInfo;
 }
 
-const titles: [string, string, string][] = [
+/* ---------- программа: темы группового и индивидуального курса ---------- */
+// Копия backend/prisma/seed-data/curriculum.ts (BACKEND.md §13) — контент не
+// различается по языку обучения (демо-плейсхолдер), но каждый продукт получает
+// свой независимый набор уроков (§4.1 TЗ).
+
+const GROUP_TITLES: [string, string, string][] = [
   ["Знакомство и алфавит", "Greetings, the alphabet and first phrases", "Foundation"],
   ["Verb to be", "Am / is / are в утверждении и отрицании", "Foundation"],
   ["Личные местоимения", "I, you, he, she, it, we, they", "Foundation"],
@@ -236,12 +256,51 @@ const titles: [string, string, string][] = [
   ["Финальный разбор", "Итоговая практика курса", "Speaking"],
 ];
 
-export const LESSONS: Lesson[] = titles.map(([title, description, block], i) => ({
-  id: `lesson-${i + 1}`,
-  order: i + 1,
-  title,
-  description,
-  block,
+// TODO(content): заглушка — точное количество и содержание уроков для Individual
+// (1 месяц, полностью отдельная программа) уточнить отдельно. Пока ~12 интенсивных тем.
+const INDIVIDUAL_TITLES: [string, string, string][] = [
+  ["Стартовая диагностика", "Оценка уровня и постановка цели курса", "Intensive"],
+  ["Разговорный минимум", "Ключевые фразы для первого разговора", "Intensive"],
+  ["Грамматический каркас", "Базовые конструкции для быстрого старта", "Intensive"],
+  ["Повседневная лексика", "Слова и фразы на каждый день", "Intensive"],
+  ["Практика диалога 1", "Отработка живого диалога с преподавателем", "Intensive"],
+  ["Работа и профессии", "Лексика для рабочих ситуаций", "Intensive"],
+  ["Практика диалога 2", "Усложнённые повседневные ситуации", "Intensive"],
+  ["Свободное время", "Разговор о хобби и планах", "Intensive"],
+  ["Деловое общение", "Email и короткие созвоны", "Intensive"],
+  ["Практика диалога 3", "Импровизация без подготовки", "Intensive"],
+  ["Итоговое ускорение", "Разбор ошибок и точечная доработка", "Intensive"],
+  ["Финальная практика", "Итоговый разговор с преподавателем", "Intensive"],
+];
+
+/** Стабильный id урока внутри продукта — `lesson-<courseProductId>-<order>`. */
+export function lessonId(courseProductId: string, order: number): string {
+  return `lesson-${courseProductId}-${order}`;
+}
+
+function lessonsFor(
+  courseProductId: string,
+  titles: [string, string, string][],
+): Omit<Lesson, "videoUrl" | "duration">[] {
+  return titles.map(([title, description, block], i) => ({
+    id: lessonId(courseProductId, i + 1),
+    courseProductId,
+    order: i + 1,
+    title,
+    description,
+    block,
+  }));
+}
+
+export const LESSONS: Lesson[] = [
+  ...lessonsFor("en-group-6mo", GROUP_TITLES),
+  ...lessonsFor("en-group-3mo", GROUP_TITLES.slice(0, 27)),
+  ...lessonsFor("ru-group-6mo", GROUP_TITLES),
+  ...lessonsFor("ru-group-3mo", GROUP_TITLES.slice(0, 27)),
+  ...lessonsFor("en-individual-1mo", INDIVIDUAL_TITLES),
+  ...lessonsFor("ru-individual-1mo", INDIVIDUAL_TITLES),
+].map((lesson, i) => ({
+  ...lesson,
   videoUrl: "/Video%20Project%201.mp4",
   duration: `${10 + ((i * 7) % 12)}:${String((i * 13) % 60).padStart(2, "0")}`,
 }));
@@ -256,7 +315,8 @@ export interface CourseStage {
 }
 
 // Текущий блок программы отображается как этап роадмапа — это шаблон
-// программы месяц-к-уровню, а не автоматическое определение уровня.
+// программы месяц-к-уровню, а не автоматическое определение уровня. Блоки
+// группового курса + отдельный блок Individual-программы (не привязан к месяцам).
 export const COURSE_STAGES: CourseStage[] = [
   { block: "Foundation", level: "A1", month: 1, title: "Foundation" },
   { block: "Grammar Core", level: "A2", month: 2, title: "Everyday Grammar" },
@@ -264,17 +324,8 @@ export const COURSE_STAGES: CourseStage[] = [
   { block: "Vocabulary", level: "B1", month: 4, title: "Vocabulary & Life" },
   { block: "Advanced Grammar", level: "B2", month: 5, title: "Advanced Grammar" },
   { block: "Speaking", level: "B2", month: 6, title: "Speaking & Fluency" },
+  { block: "Intensive", level: "A1", month: 1, title: "Intensive" },
 ];
-
-export const COURSE = {
-  id: "course-en",
-  name: "English",
-  totalLessons: LESSONS.length,
-  variants: [
-    { type: "GROUP" as CourseType, duration: "6 месяцев", price: "15 000 сом" },
-    { type: "INDIVIDUAL" as CourseType, duration: "1 месяц", price: "20 000 сом" },
-  ],
-};
 
 /* ---------- языки ---------- */
 
@@ -291,8 +342,10 @@ export function languageNameRu(code: LanguageCode) {
 }
 
 /* ---------- курсы (продукты) ---------- */
+// Копия backend/prisma/seed-data/curriculum.ts COURSE_PRODUCTS — 6 категорий:
+// EN/RU × Group-3мес/Group-6мес/Individual-1мес, каждая со своим набором уроков.
 
-const DEFAULT_LEVEL_PLAN: { month: number; level: CefrLevel }[] = [
+const GROUP_6MO_LEVEL_PLAN: { month: number; level: CefrLevel }[] = [
   { month: 1, level: "A1" },
   { month: 2, level: "A2" },
   { month: 3, level: "B1" },
@@ -301,57 +354,91 @@ const DEFAULT_LEVEL_PLAN: { month: number; level: CefrLevel }[] = [
   { month: 6, level: "B2" },
 ];
 
+const GROUP_3MO_LEVEL_PLAN: { month: number; level: CefrLevel }[] = GROUP_6MO_LEVEL_PLAN.slice(0, 3);
+
+const INDIVIDUAL_LEVEL_PLAN: { month: number; level: CefrLevel }[] = [{ month: 1, level: "A1" }];
+
+const GROUP_FEATURES = ["Теория", "Тесты", "Повторение", "Групповая практика", "Преподаватель", "Google Meet"];
+const INDIVIDUAL_FEATURES = ["Индивидуальная практика с преподавателем", "Отдельная интенсивная программа"];
+
 export const COURSE_PRODUCTS: CourseProduct[] = [
   {
-    id: "en-group",
+    id: "en-group-6mo",
     language: "en",
     format: "GROUP",
-    title: "English Group",
+    title: "English Group · 6 месяцев",
     durationMonths: 6,
     price: 15000,
     currency: "сом",
-    features: ["Теория", "Тесты", "Повторение", "Групповая практика", "Преподаватель", "Google Meet"],
-    levelPlan: DEFAULT_LEVEL_PLAN,
+    features: GROUP_FEATURES,
+    levelPlan: GROUP_6MO_LEVEL_PLAN,
   },
   {
-    id: "ru-group",
+    id: "en-group-3mo",
+    language: "en",
+    format: "GROUP",
+    title: "English Group · 3 месяца",
+    durationMonths: 3,
+    price: 9000,
+    currency: "сом",
+    features: GROUP_FEATURES,
+    levelPlan: GROUP_3MO_LEVEL_PLAN,
+  },
+  {
+    id: "ru-group-6mo",
     language: "ru",
     format: "GROUP",
-    title: "Russian Group",
+    title: "Russian Group · 6 месяцев",
     durationMonths: 6,
     price: 12000,
     currency: "сом",
-    features: ["Теория", "Тесты", "Повторение", "Групповая практика", "Преподаватель", "Google Meet"],
-    levelPlan: DEFAULT_LEVEL_PLAN,
+    features: GROUP_FEATURES,
+    levelPlan: GROUP_6MO_LEVEL_PLAN,
   },
   {
-    id: "en-individual",
+    id: "ru-group-3mo",
+    language: "ru",
+    format: "GROUP",
+    title: "Russian Group · 3 месяца",
+    durationMonths: 3,
+    price: 7500,
+    currency: "сом",
+    features: GROUP_FEATURES,
+    levelPlan: GROUP_3MO_LEVEL_PLAN,
+  },
+  {
+    id: "en-individual-1mo",
     language: "en",
     format: "INDIVIDUAL",
     title: "English Individual",
     durationMonths: 1,
     price: 20000,
     currency: "сом",
-    features: ["Индивидуальная практика с преподавателем", "Та же теория, что в English Group"],
-    levelPlan: DEFAULT_LEVEL_PLAN,
+    features: INDIVIDUAL_FEATURES,
+    levelPlan: INDIVIDUAL_LEVEL_PLAN,
   },
   {
-    id: "ru-individual",
+    id: "ru-individual-1mo",
     language: "ru",
     format: "INDIVIDUAL",
     title: "Russian Individual",
     durationMonths: 1,
     price: 20000,
     currency: "сом",
-    features: ["Индивидуальная практика с преподавателем", "Та же теория, что в Russian Group"],
-    levelPlan: DEFAULT_LEVEL_PLAN,
+    features: INDIVIDUAL_FEATURES,
+    levelPlan: INDIVIDUAL_LEVEL_PLAN,
   },
 ];
 
-export function courseProduct(language: LanguageCode, format: CourseType) {
-  return (
-    COURSE_PRODUCTS.find((c) => c.language === language && c.format === format) ?? COURSE_PRODUCTS[0]!
+/** Резолвит id продукта по языку+формату(+длительности для GROUP) — как backend/course-resolver. */
+export function productIdFor(language: LanguageCode, format: CourseType, durationMonths: number): string {
+  const product = COURSE_PRODUCTS.find(
+    (p) => p.language === language && p.format === format && p.durationMonths === durationMonths,
   );
+  if (!product) {
+    throw new Error(`Не найден CourseProduct для ${language}/${format}/${durationMonths}мес`);
+  }
+  return product.id;
 }
 
 /* ---------- преподаватели ---------- */
@@ -404,12 +491,15 @@ function makeGroup(
   currentLesson: number,
   meetUrl: string,
   maxStudents = 50,
+  durationMonths = 6,
 ): Omit<Group, "code" | "name"> {
   return {
     id,
     language,
+    durationMonths,
+    courseProductId: productIdFor(language, "GROUP", durationMonths),
     startDate,
-    endDate: endAfterMonths(startDate, 6),
+    endDate: endAfterMonths(startDate, durationMonths),
     practiceStart,
     practiceEnd,
     teacherId,
@@ -444,6 +534,9 @@ export const GROUPS: Group[] = assignGroupCodes([
   makeGroup("g-ru-0907", "ru", "2026-09-07", "20:00", "21:00", "t5", "recruiting", 1, ""),
   makeGroup("g-ru-0914", "ru", "2026-09-14", "21:00", "22:00", null, "recruiting", 1, "https://meet.google.com/rus-0914-grp"),
   makeGroup("g-en-0518", "en", "2026-05-10", "21:00", "22:00", "t1", "finished", 54, "https://meet.google.com/eng-old-grp"),
+  // Демо-группы на 3-месячном тарифе — для ручной проверки per-product сценариев (BACKEND.md §13).
+  makeGroup("g-en-0928", "en", "2026-09-28", "19:00", "20:00", "t2", "recruiting", 1, "https://meet.google.com/eng-0928-grp", 50, 3),
+  makeGroup("g-ru-0928", "ru", "2026-09-28", "19:00", "20:00", "t5", "recruiting", 1, "https://meet.google.com/rus-0928-grp", 50, 3),
 ]);
 
 /* ---------- ученики ---------- */
@@ -461,20 +554,30 @@ const CITIES = ["Бишкек", "Ош", "Джалал-Абад", "Каракол
 const FIRST_NAMES = ["Айгерим", "Нурбек", "Азиз", "Салтанат", "Тимур", "Жамиля", "Эрлан", "Гулназ", "Максат", "Асель", "Бакыт", "Динара", "Руслан", "Чолпон", "Данияр", "Айпери", "Кубат", "Мээрим", "Улан", "Назгуль"];
 const LAST_NAMES = ["Абдиев", "Токтосунова", "Мамытов", "Исакова", "Орозов", "Бекова", "Сыдыков", "Алиева", "Жумабаев", "Турсунова", "Касымов", "Эргешова", "Досов", "Бейшеналиева", "Уметалиев", "Кадырова"];
 
+// Продукты сид-учеников ниже (по их groupId/type) — для справки при чтении completed/watched:
+// s1, s2 -> en-group-6mo (g-en-0824); s3 -> en-individual-1mo; s4 -> en-group-6mo (g-en-0518); s5 -> ru-individual-1mo.
 const HAND_STUDENTS: Student[] = [
   {
     id: "s1", login: "kanat", password: "test123", firstName: "Канат", lastName: "Уметов",
     phone: "+996 700 112 233", language: "en", type: "GROUP", age: 27, city: "Бишкек",
     groupId: "g-en-0824", teacherId: "t1", startDate: "2026-08-18", endDate: "2027-02-18",
-    status: "active", openedUpTo: 4, completed: [1, 2], completedAt: { 1: "2026-08-18", 2: "2026-08-20" },
-    watched: { 3: 40 }, lastActivity: "2026-08-18", avatarTone: "var(--tone-1)", onboarded: true,
+    status: "active", openedUpTo: 4,
+    completed: [lessonId("en-group-6mo", 1), lessonId("en-group-6mo", 2)],
+    completedAt: { [lessonId("en-group-6mo", 1)]: "2026-08-18", [lessonId("en-group-6mo", 2)]: "2026-08-20" },
+    watched: { [lessonId("en-group-6mo", 3)]: 40 }, lastActivity: "2026-08-18", avatarTone: "var(--tone-1)", onboarded: true,
     managerName: "Нурбол", payment: payment(15000, 15000, "2026-08-10"),
   },
   {
     id: "s2", login: "alina", password: "test123", firstName: "Алина", lastName: "Ким",
     phone: "+996 555 908 771", language: "en", type: "GROUP", age: 24, city: "Бишкек",
     groupId: "g-en-0824", teacherId: "t1", startDate: "2026-08-18", endDate: "2027-02-18",
-    status: "active", openedUpTo: 4, completed: [1, 2, 3], completedAt: { 1: "2026-08-18", 2: "2026-08-19", 3: "2026-08-21" },
+    status: "active", openedUpTo: 4,
+    completed: [lessonId("en-group-6mo", 1), lessonId("en-group-6mo", 2), lessonId("en-group-6mo", 3)],
+    completedAt: {
+      [lessonId("en-group-6mo", 1)]: "2026-08-18",
+      [lessonId("en-group-6mo", 2)]: "2026-08-19",
+      [lessonId("en-group-6mo", 3)]: "2026-08-21",
+    },
     watched: {}, lastActivity: "2026-08-17", avatarTone: "var(--tone-2)", onboarded: true,
     managerName: "Нурбол", payment: payment(15000, 7500, "2026-08-11"),
   },
@@ -482,15 +585,18 @@ const HAND_STUDENTS: Student[] = [
     id: "s3", login: "aibek", password: "test123", firstName: "Айбек", lastName: "Сатыбалдиев",
     phone: "+996 707 445 010", language: "en", type: "INDIVIDUAL", age: 31, city: "Ош",
     groupId: null, teacherId: "t2", startDate: "2026-08-05", endDate: "2026-09-05",
-    status: "active", openedUpTo: 7, completed: [1, 2, 3, 4, 5, 6], completedAt: { 1: "2026-08-05" },
-    watched: { 7: 60 }, lastActivity: "2026-08-18", avatarTone: "var(--tone-3)", onboarded: true,
+    status: "active", openedUpTo: 7,
+    completed: [1, 2, 3, 4, 5, 6].map((o) => lessonId("en-individual-1mo", o)),
+    completedAt: { [lessonId("en-individual-1mo", 1)]: "2026-08-05" },
+    watched: { [lessonId("en-individual-1mo", 7)]: 60 }, lastActivity: "2026-08-18", avatarTone: "var(--tone-3)", onboarded: true,
     managerName: "Нурбол", payment: payment(20000, 20000, "2026-08-01"),
   },
   {
     id: "s4", login: "nurai", password: "test123", firstName: "Нурай", lastName: "Асанова",
     phone: "+996 559 220 118", language: "en", type: "GROUP", age: 29, city: "Каракол",
     groupId: "g-en-0518", teacherId: "t1", startDate: "2026-05-10", endDate: "2026-11-10",
-    status: "expired", openedUpTo: 54, completed: Array.from({ length: 40 }, (_, i) => i + 1),
+    status: "expired", openedUpTo: 54,
+    completed: Array.from({ length: 40 }, (_, i) => lessonId("en-group-6mo", i + 1)),
     completedAt: {}, watched: {}, lastActivity: "2026-08-09", avatarTone: "var(--tone-4)", onboarded: true,
     managerName: "Азамат", payment: payment(15000, 15000, "2026-05-02"),
   },
@@ -514,9 +620,14 @@ function generateStudents(count: number): Student[] {
     const language: LanguageCode = i % 3 === 0 ? "ru" : "en";
     const isIndividual = i % 7 === 0;
     const type: CourseType = isIndividual ? "INDIVIDUAL" : "GROUP";
-    const product = courseProduct(language, type);
     const pool = recruitingGroups.filter((g) => g.language === language);
     const group = !isIndividual && pool.length ? pool[i % pool.length]! : null;
+    // Продукт — из фактически подобранной группы (её тариф может быть 3 или 6 месяцев),
+    // а не угадан по языку+формату (BACKEND.md: CourseResolverService.forStudent).
+    const productId = isIndividual
+      ? productIdFor(language, "INDIVIDUAL", 1)
+      : (group?.courseProductId ?? productIdFor(language, "GROUP", 6));
+    const product = COURSE_PRODUCTS.find((p) => p.id === productId)!;
     const startDate = group ? group.startDate : "2026-08-20";
     const openedUpTo = group ? group.currentLesson : 1 + (i % 6);
     const completedCount = Math.max(0, Math.min(openedUpTo - 1, (i * 3) % (openedUpTo + 1)));
@@ -544,9 +655,9 @@ function generateStudents(count: number): Student[] {
       endDate: endAfterMonths(startDate, product.durationMonths),
       status,
       openedUpTo,
-      completed: Array.from({ length: completedCount }, (_, k) => k + 1),
+      completed: Array.from({ length: completedCount }, (_, k) => lessonId(productId, k + 1)),
       completedAt: {},
-      watched: completedCount < openedUpTo ? { [openedUpTo]: (i * 17) % 100 } : {},
+      watched: completedCount < openedUpTo ? { [lessonId(productId, openedUpTo)]: (i * 17) % 100 } : {},
       lastActivity,
       avatarTone: TONES[i % TONES.length]!,
       onboarded: i % 6 !== 0,
@@ -567,9 +678,14 @@ export const CURATOR = {
   role: "curator" as Role,
 };
 
+const EN_GROUP_6MO = "en-group-6mo";
+const RU_GROUP_6MO = "ru-group-6mo";
+const EN_INDIVIDUAL_1MO = "en-individual-1mo";
+
 export const MEETINGS: Meeting[] = [
   {
     id: "m1",
+    courseProductId: EN_GROUP_6MO,
     lessonOrder: 4,
     studentId: "group",
     groupId: "g-en-0824",
@@ -583,6 +699,7 @@ export const MEETINGS: Meeting[] = [
   },
   {
     id: "m2",
+    courseProductId: EN_GROUP_6MO,
     lessonOrder: 5,
     studentId: "group",
     groupId: "g-en-0824",
@@ -596,6 +713,7 @@ export const MEETINGS: Meeting[] = [
   },
   {
     id: "m3",
+    courseProductId: EN_GROUP_6MO,
     lessonOrder: 3,
     studentId: "group",
     groupId: "g-en-0824",
@@ -610,6 +728,7 @@ export const MEETINGS: Meeting[] = [
   },
   {
     id: "m4",
+    courseProductId: RU_GROUP_6MO,
     lessonOrder: 4,
     studentId: "group",
     groupId: "g-ru-0824",
@@ -623,6 +742,7 @@ export const MEETINGS: Meeting[] = [
   },
   {
     id: "m5",
+    courseProductId: EN_INDIVIDUAL_1MO,
     lessonOrder: 7,
     studentId: "s3",
     groupId: null,
@@ -676,6 +796,7 @@ function makeQuestion(
 export const TESTS: LessonTest[] = [
   {
     id: "test-1",
+    lessonId: lessonId(EN_GROUP_6MO, 1),
     lessonOrder: 1,
     title: "Тест к уроку 1",
     timeLimitSec: 300,
@@ -729,6 +850,25 @@ export const TESTS: LessonTest[] = [
   },
 ];
 
-export const TEST_ATTEMPTS: TestAttempt[] = [];
+export const TEST_ATTEMPTS: TestAttempt[] = [
+  // Канат (s1) сдал тест урока 1 на проходной балл — благодаря этому его урок 3
+  // открыт (тест-гейт, ТЗ инвариант 4). У Алины (s2) попытки нет: она завершила
+  // уроки, но тест 1 не сдан — её следующий урок закрыт до сдачи.
+  {
+    id: "attempt-s1-test1",
+    testId: "test-1",
+    lessonId: lessonId(EN_GROUP_6MO, 1),
+    studentId: "s1",
+    startedAt: "2026-08-19T10:00:00.000Z",
+    expiresAt: "2026-08-19T10:05:00.000Z",
+    submittedAt: "2026-08-19T10:03:30.000Z",
+    answers: {},
+    correctCount: 7,
+    totalQuestions: 8,
+    score: 88,
+    passed: true,
+    status: "submitted",
+  },
+];
 
 export const TODAY = "2026-08-18";

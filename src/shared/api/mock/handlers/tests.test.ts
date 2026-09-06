@@ -5,7 +5,8 @@ import type { Dto } from "@/shared/api/schema";
 
 // `/me/tests/:order`, `/me/attempts/:id` — BACKEND.md §7.3. Тест-1 (урок 1, 8
 // вопросов single-choice, passingScore 70, timeLimitSec 300) — единственный
-// сеяный published-тест (mock-data.ts). kanat (s1): completed=[1,2] -> тест урока 1 доступен.
+// сеяный published-тест (mock-data.ts). kanat (s1): completed=[1,2], сдал тест 1;
+// alina (s2): completed=[1,2,3], тест 1 ещё не начинала -> у неё он "available".
 
 beforeAll(async () => {
   const { accessToken } = await apiClient.post<Dto<"LoginResponseDto">>("/auth/login", {
@@ -17,6 +18,10 @@ beforeAll(async () => {
 
 describe("GET /me/tests/:order", () => {
   it("reports intro + availability for the published test of a completed lesson", async () => {
+    // alina завершила урок 1, но тест ещё не проходила -> "available", без best
+    await apiClient
+      .post<Dto<"LoginResponseDto">>("/auth/login", { login: "alina", password: "test123" })
+      .then((r) => setAccessToken(r.accessToken));
     const intro = await apiClient.get<Dto<"TestIntroDto">>("/me/tests/1");
     expect(intro.title).toBe("Тест к уроку 1");
     expect(intro.questionCount).toBe(8);
@@ -27,10 +32,18 @@ describe("GET /me/tests/:order", () => {
   });
 
   it("locks the test with lesson_not_completed while the lesson video isn't finished", async () => {
-    // elmira (s5): openedUpTo=1, completed=[] -> урок 1 available, но не completed.
-    // Чтение `/me/*` не гейтится доступом (BACKEND.md §7.6), даже с status=disabled.
+    // test-1 живёт на en-group-6mo/lesson-1 (mock-data.ts) — ищем ученика этого же
+    // продукта (groupId g-en-0907, recruiting, currentLesson=1), который ещё не
+    // прошёл урок 1: у recruiting-групп currentLesson=1 -> у всех её учеников
+    // completedCount=0 (generateStudents в mock-data.ts), урок 1 available, но не completed.
     await apiClient
-      .post<Dto<"LoginResponseDto">>("/auth/login", { login: "elmira", password: "test123" })
+      .post<Dto<"LoginResponseDto">>("/auth/login", { login: "curator", password: "test123" })
+      .then((r) => setAccessToken(r.accessToken));
+    const roster = await apiClient.get<Dto<"StudentsListDto">>("/students?groupId=g-en-0907");
+    const freshStudent = roster.items.find((s) => s.currentLessonOrder === 1)!;
+
+    await apiClient
+      .post<Dto<"LoginResponseDto">>("/auth/login", { login: freshStudent.login, password: "test123" })
       .then((r) => setAccessToken(r.accessToken));
 
     const intro = await apiClient.get<Dto<"TestIntroDto">>("/me/tests/1");
@@ -153,7 +166,7 @@ describe("IDOR: /me/attempts/:id belongs only to its owner (TЗ, инвариа�
   });
 });
 
-describe("curator: редактор теста — BACKEND.md §12 (tests). Урок 5 без сеяного теста.", () => {
+describe("curator: редактор теста — BACKEND.md §12 (tests). Урок 5 (en-individual-1mo) без сеяного теста.", () => {
   beforeAll(async () => {
     const { accessToken } = await apiClient.post<Dto<"LoginResponseDto">>("/auth/login", {
       login: "curator",
@@ -162,14 +175,23 @@ describe("curator: редактор теста — BACKEND.md §12 (tests). Ур
     setAccessToken(accessToken);
   });
 
-  it("GET /tests/:lessonOrder is null before a test is created", async () => {
-    const test = await apiClient.get<Dto<"TestEditorDto"> | null>("/tests/5");
+  // Тест создаётся на уроке 5 продукта en-individual-1mo (не en-group-6mo — у него уже
+  // есть test-1 на уроке 1) — так, как это делает `LessonEditor` (передаёт `l.id`).
+  async function lesson5() {
+    return apiClient.get<Dto<"LessonEditorDto">>("/courses/products/en-individual-1mo/lessons/5");
+  }
+
+  it("GET /tests/lesson/:lessonId is null before a test is created", async () => {
+    const lesson = await lesson5();
+    const test = await apiClient.get<Dto<"TestEditorDto"> | null>(`/tests/lesson/${lesson.id}`);
     expect(test).toBeNull();
   });
 
   it("creates a draft test, adds a question with 4 options (first correct), edits it, then publishes", async () => {
-    const created = await apiClient.post<Dto<"TestEditorDto">>("/tests", { lessonOrder: 5 });
+    const lesson = await lesson5();
+    const created = await apiClient.post<Dto<"TestEditorDto">>("/tests", { lessonId: lesson.id });
     expect(created.status).toBe("draft");
+    expect(created.lessonId).toBe(lesson.id);
     expect(created.lessonOrder).toBe(5);
 
     // Публикация без вопросов запрещена (TЗ, инвариант 6).
@@ -198,8 +220,8 @@ describe("curator: редактор теста — BACKEND.md §12 (tests). Ур
     const published = await apiClient.patch<Dto<"TestEditorDto">>(`/tests/${created.id}`, { status: "published" });
     expect(published.status).toBe("published");
 
-    // Опубликованный тест урока 5 виден ученику с завершённым уроком 5.
-    // aibek (s3): completed=[1..6] -> урок 5 completed, тест доступен.
+    // Опубликованный тест урока 5 (en-individual-1mo) виден ученику этого продукта
+    // с завершённым уроком 5. aibek (s3): individual, completed=[1..6] -> урок 5 completed.
     await apiClient
       .post<Dto<"LoginResponseDto">>("/auth/login", { login: "aibek", password: "test123" })
       .then((r) => setAccessToken(r.accessToken));
@@ -213,7 +235,8 @@ describe("curator: редактор теста — BACKEND.md §12 (tests). Ур
   });
 
   it("deletes a question (renumbering the rest) and deletes the whole test", async () => {
-    const test = await apiClient.get<Dto<"TestEditorDto">>("/tests/5");
+    const lesson = await lesson5();
+    const test = await apiClient.get<Dto<"TestEditorDto">>(`/tests/lesson/${lesson.id}`);
     const testId = test!.id;
     await apiClient.post<Dto<"TestEditorDto">>(`/tests/${testId}/questions`); // second question, order 2
 
@@ -222,7 +245,7 @@ describe("curator: редактор теста — BACKEND.md §12 (tests). Ур
     expect(afterDelete.questions[0]!.order).toBe(1);
 
     await apiClient.delete(`/tests/${testId}`);
-    const gone = await apiClient.get<Dto<"TestEditorDto"> | null>("/tests/5");
+    const gone = await apiClient.get<Dto<"TestEditorDto"> | null>(`/tests/lesson/${lesson.id}`);
     expect(gone).toBeNull();
   });
 });

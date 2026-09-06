@@ -12,7 +12,11 @@ export const coursesHandlers: HttpHandler[] = [
     const guard = requireCurator(request);
     if (guard) return guard;
 
-    const response: Dto<"CourseProductDto">[] = db.products;
+    // Порядок карточек на экране «Курсы»: сначала по убыванию длительности (6мес → 3мес →
+    // 1мес), внутри тарифа — по языку (en → ru). Совпадает с backend CoursesService.products().
+    const response: Dto<"CourseProductDto">[] = [...db.products].sort(
+      (a, b) => b.durationMonths - a.durationMonths || a.language.localeCompare(b.language),
+    );
     return HttpResponse.json(response);
   }),
 

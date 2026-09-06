@@ -7,6 +7,7 @@ export type {
   LessonTestSummary,
   LessonEditorDetail,
   UpdateLessonRequest,
+  CreateLessonRequest,
 } from "./model/types";
 export {
   lessonsQueryOptions,

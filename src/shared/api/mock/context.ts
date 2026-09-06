@@ -1,9 +1,36 @@
 import { HttpResponse } from "msw";
 import { db } from "./db";
 import { effectiveAccessStatus } from "./domain";
-import type { Student } from "./seed-data/mock-data";
+import { productIdFor, type CourseProduct, type Lesson, type LessonTest, type Student } from "./seed-data/mock-data";
 
 /** Общие мелочи для MSW-хендлеров: разбор Bearer-токена, стандартные ошибки. */
+
+/**
+ * Резолвит `courseProductId` актора — та же роль, что у backend/CourseResolverService
+ * (BACKEND.md §4/§6): GROUP — через `Group.courseProductId`, INDIVIDUAL — единственный
+ * продукт на язык. Нужен всем хендлерам, которые прежде читали `db.lessons` плоским
+ * списком — теперь у каждого продукта свой независимый набор уроков (TЗ §4.1).
+ */
+export function productIdOfStudent(student: Pick<Student, "type" | "language" | "groupId">): string {
+  if (student.type === "INDIVIDUAL") return productIdFor(student.language, "INDIVIDUAL", 1);
+  const group = db.groups.find((g) => g.id === student.groupId);
+  return group ? group.courseProductId : productIdFor(student.language, "GROUP", 6);
+}
+
+/** Уроки конкретного продукта, отсортированные как в каталоге (по `order`, как в сиде). */
+export function lessonsOfProduct(courseProductId: string): Lesson[] {
+  return db.lessons.filter((l) => l.courseProductId === courseProductId);
+}
+
+/** Тесты уроков конкретного продукта — джойн через `Lesson.id` (BACKEND.md: `LessonTest.lessonId`). */
+export function testsOfProduct(courseProductId: string): LessonTest[] {
+  const ids = new Set(lessonsOfProduct(courseProductId).map((l) => l.id));
+  return db.tests.filter((t) => ids.has(t.lessonId));
+}
+
+export function productById(courseProductId: string): CourseProduct | undefined {
+  return db.products.find((p) => p.id === courseProductId);
+}
 
 export function userIdFromAuthHeader(header: string | null): string | null {
   if (!header?.startsWith("Bearer ")) return null;

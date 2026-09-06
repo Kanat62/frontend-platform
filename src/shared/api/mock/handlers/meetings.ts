@@ -3,7 +3,7 @@ import type { Dto } from "@/shared/api/schema";
 import { TODAY } from "@/shared/config";
 import { shiftWeek, weekRangeOf } from "@/shared/lib";
 import { db } from "../db";
-import { badRequest, notFound, requireCurator } from "../context";
+import { badRequest, lessonsOfProduct, notFound, productById, productIdOfStudent, requireCurator } from "../context";
 import type { Meeting } from "../seed-data/mock-data";
 import { currentLessonOrder, groupStage, studentsInGroup, teacherOf } from "../domain";
 
@@ -41,7 +41,7 @@ function meetingRoster(meeting: Meeting): Dto<"MeetingAttendeeDto">[] {
   ];
 }
 
-function meetingDto(meeting: Meeting): Dto<"ScheduleMeetingDto"> {
+export function meetingDto(meeting: Meeting): Dto<"ScheduleMeetingDto"> {
   const group = meeting.groupId ? db.groups.find((g) => g.id === meeting.groupId) : null;
   const student = meeting.type === "INDIVIDUAL" ? db.students.find((s) => s.id === meeting.studentId) : null;
   const teacherId = group ? group.teacherId : student ? student.teacherId : null;
@@ -95,10 +95,11 @@ export const meetingsHandlers: HttpHandler[] = [
       const meetUrl = body.meetUrl || group.meetUrl;
       if (!meetUrl) return badRequest("Добавьте ссылку Google Meet (в группе или в форме)");
 
-      const stage = groupStage(group, db.lessons);
+      const stage = groupStage(group, lessonsOfProduct(group.courseProductId), productById(group.courseProductId)!);
       const [h, min] = group.practiceStart.split(":");
       const meeting: Meeting = {
         id: `m-${Date.now()}`,
+        courseProductId: group.courseProductId,
         lessonOrder: group.currentLesson,
         studentId: "group",
         groupId: group.id,
@@ -120,10 +121,12 @@ export const meetingsHandlers: HttpHandler[] = [
     const meetUrl = body.meetUrl;
     if (!meetUrl) return badRequest("Добавьте ссылку Google Meet");
 
-    const order = currentLessonOrder(student);
-    const lesson = db.lessons.find((l) => l.order === order);
+    const productId = productIdOfStudent(student);
+    const order = currentLessonOrder(student, lessonsOfProduct(productId));
+    const lesson = lessonsOfProduct(productId).find((l) => l.order === order);
     const meeting: Meeting = {
       id: `m-${Date.now()}`,
+      courseProductId: productId,
       lessonOrder: order,
       studentId: student.id,
       groupId: null,

@@ -1,6 +1,6 @@
 import { TODAY, WEEK_RHYTHM } from "@/shared/config";
 import { daysLeft } from "@/shared/lib";
-import { courseProduct, type Group, type Lesson, type Student, type Teacher } from "../seed-data/mock-data";
+import type { CourseProduct, Group, Lesson, Student, Teacher } from "../seed-data/mock-data";
 import { levelForLesson, monthOfLesson } from "./program";
 
 /** Порт `groupStage`/`groupHealth`/`groupWeekSchedule`/`studentsInGroup`/… из store.tsx. */
@@ -12,12 +12,12 @@ export interface GroupStage {
   topic: string;
 }
 
-export function groupStage(group: Group, lessons: Lesson[]): GroupStage {
-  const product = courseProduct(group.language, "GROUP");
+/** `lessons`/`product` — уже отфильтрованные/резолвленные по `group.courseProductId` (BACKEND.md §4.1). */
+export function groupStage(group: Group, lessons: Lesson[], product: CourseProduct): GroupStage {
   const lesson = lessons.find((l) => l.order === group.currentLesson);
   return {
-    month: monthOfLesson(group.currentLesson),
-    level: levelForLesson(product, group.currentLesson),
+    month: monthOfLesson(group.currentLesson, lessons.length, product.durationMonths),
+    level: levelForLesson(product, group.currentLesson, lessons.length),
     lesson: group.currentLesson,
     topic: lesson?.title ?? "—",
   };

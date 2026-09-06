@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { TODAY } from "@/shared/config";
-import { ApiError, generateLogin } from "@/shared/lib";
+import { ApiError, generateLogin, generatePassword } from "@/shared/lib";
 import { Select } from "@/shared/ui";
 import { useGroupsQuery } from "@/entities/group";
 import type { CourseType, CreateStudentResponse, LanguageCode } from "@/entities/student";
@@ -14,9 +14,12 @@ const field =
 /**
  * Порт CreateStudentModal из curator.students.index.tsx. Отличия от референса,
  * продиктованные реальным (не localStorage) бэкендом:
- * - пароль генерирует и возвращает сервер один раз при создании (BACKEND.md §12) —
- *   его больше нельзя показать заранее как предпросмотр, форма показывает
- *   логин/пароль в отдельном экране успеха после сабмита;
+ * - пароль (как в референсе) генерируется на клиенте один раз — после того как
+ *   появился логин, показывается read-only полем рядом с логином и отправляется
+ *   вместе с формой; сервер хранит только bcrypt-хеш и возвращает пароль в
+ *   ответе, чтобы экран успеха мог его показать/скопировать;
+ * - для GROUP-ученика сразу подставляется реально подобранная группа (тот же
+ *   отбор, что делает сервер) — куратор видит её имя и может сменить вручную;
  * - логин по-прежнему генерируется на клиенте как предпросмотр (FRONTEND.md §6),
  *   но без проверки на занятость (список логинов не грузится целиком на
  *   пагинированный клиент) — финальную уникальность всё равно проверяет сервер,
@@ -43,14 +46,43 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
     groupChoice: "", // "" = авто-подбор на сервере
   });
   const [loginTouched, setLoginTouched] = useState(false);
+  const [groupTouched, setGroupTouched] = useState(false);
+  // Пароль генерируется один раз — после того как появился логин; куратор его не
+  // меняет (референс). Отправляется вместе с формой; уникальность/хеш — на сервере.
+  const [password, setPassword] = useState("");
 
   const groups = useGroupsQuery("all", f.language);
-  const languageGroups = groups.data?.items ?? [];
+  const languageGroups = useMemo(() => groups.data?.items ?? [], [groups.data]);
 
   useEffect(() => {
     if (loginTouched) return;
     setF((prev) => ({ ...prev, login: generateLogin(prev.firstName, prev.phone, new Set()) }));
   }, [f.firstName, f.phone, loginTouched]);
+
+  useEffect(() => {
+    setPassword((prev) => (prev || !f.login.trim() ? prev : generatePassword(new Set())));
+  }, [f.login]);
+
+  // Группа, которую подберёт сервер при `groupId: null` (тот же отбор, что в
+  // shared/api/mock/domain/groups.ts → findMatchingGroup): язык + набор открыт +
+  // старт не раньше даты + совпал вечерний слот + есть места, ближайшая по старту.
+  const autoGroup = useMemo(() => {
+    if (f.type !== "GROUP") return null;
+    return (
+      [...languageGroups]
+        .filter((g) => g.status === "recruiting")
+        .filter((g) => g.startDate >= f.startDate)
+        .filter((g) => g.practiceStart === f.time)
+        .filter((g) => g.studentCount < g.maxStudents)
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null
+    );
+  }, [languageGroups, f.type, f.startDate, f.time]);
+
+  // Пока куратор не выбрал группу вручную — держим в форме реально подобранную.
+  useEffect(() => {
+    if (groupTouched || f.type !== "GROUP") return;
+    setF((prev) => ({ ...prev, groupChoice: autoGroup?.id ?? "" }));
+  }, [autoGroup, groupTouched, f.type]);
 
   const regenerateLogin = () => {
     setLoginTouched(false);
@@ -67,6 +99,8 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
       toast.error("Укажите логин");
       return;
     }
+    // Пароль появляется вслед за логином; на случай мгновенного сабмита — добираем здесь.
+    const pwd = password || generatePassword(new Set());
     create.mutate(
       {
         firstName: f.firstName,
@@ -75,6 +109,7 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
         city: f.city,
         phone: f.phone,
         login: f.login,
+        password: pwd,
         language: f.language,
         type: f.type,
         startDate: f.startDate,
@@ -129,29 +164,45 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Доступ ученика</p>
-          <div className="mt-2">
-            <div className="flex items-center gap-2">
-              <input
-                className={field}
-                placeholder="Логин"
-                value={f.login}
-                onChange={(e) => {
-                  setLoginTouched(true);
-                  setF({ ...f, login: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") });
-                }}
-              />
-              <button
-                type="button"
-                onClick={regenerateLogin}
-                aria-label="Сгенерировать логин заново"
-                className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted-foreground hover:text-foreground"
-              >
-                <RefreshCw className="size-4" />
-              </button>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <input
+                  className={field}
+                  placeholder="Логин"
+                  value={f.login}
+                  onChange={(e) => {
+                    setLoginTouched(true);
+                    setF({ ...f, login: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "") });
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={regenerateLogin}
+                  aria-label="Сгенерировать логин заново"
+                  className="grid size-10 shrink-0 place-items-center rounded-xl border border-border text-muted-foreground hover:text-foreground"
+                >
+                  <RefreshCw className="size-4" />
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Предпросмотр из имени и телефона · можно изменить, уникальность проверит сервер
+              </p>
             </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Предпросмотр из имени и телефона · можно изменить, уникальность проверит сервер
-            </p>
+            <div>
+              <input
+                className={`${field} font-mono`}
+                value={password}
+                readOnly
+                placeholder="Пароль"
+                aria-label="Пароль"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {password
+                  ? "Пароль из 5 букв · сгенерирован · куратор не меняет · сохраните после создания"
+                  : "Сгенерируется автоматически, как только появится логин"}
+              </p>
+            </div>
           </div>
 
           <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Обучение</p>
@@ -159,7 +210,10 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
             <Select
               ariaLabel="Язык"
               value={f.language}
-              onChange={(v) => setF({ ...f, language: v as LanguageCode, groupChoice: "" })}
+              onChange={(v) => {
+                setGroupTouched(false);
+                setF({ ...f, language: v as LanguageCode, groupChoice: "" });
+              }}
               options={[
                 { value: "en", label: "English" },
                 { value: "ru", label: "Русский" },
@@ -168,7 +222,10 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
             <Select
               ariaLabel="Формат"
               value={f.type}
-              onChange={(v) => setF({ ...f, type: v as CourseType, groupChoice: "" })}
+              onChange={(v) => {
+                setGroupTouched(false);
+                setF({ ...f, type: v as CourseType, groupChoice: "" });
+              }}
               options={[
                 { value: "GROUP", label: "Group" },
                 { value: "INDIVIDUAL", label: "Individual" },
@@ -202,15 +259,17 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
                 className="mt-1"
                 ariaLabel="Группа"
                 value={f.groupChoice}
-                onChange={(v) => setF({ ...f, groupChoice: v })}
-                placeholder="Авто-подбор при создании"
-                options={[
-                  { value: "", label: "Авто-подбор при создании" },
-                  ...languageGroups.map((g) => ({ value: g.id, label: g.name })),
-                ]}
+                onChange={(v) => {
+                  setGroupTouched(true);
+                  setF({ ...f, groupChoice: v });
+                }}
+                placeholder="Нет подходящей группы — выберите вручную"
+                options={languageGroups.map((g) => ({ value: g.id, label: g.name }))}
               />
               <span className="mt-1 block text-[11px] font-normal text-muted-foreground">
-                По умолчанию сервер подберёт ближайшую группу с открытым набором — можно выбрать вручную.
+                {f.groupChoice && !groupTouched
+                  ? "Подобрана автоматически по языку, дате и вечернему слоту — можно сменить."
+                  : "Ближайшая группа с открытым набором и свободными местами."}
               </span>
             </label>
           )}

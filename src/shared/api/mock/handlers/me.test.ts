@@ -4,7 +4,7 @@ import { setAccessToken } from "@/shared/api/token";
 import type { Dto } from "@/shared/api/schema";
 
 // Регрессия на вычисляемые поля `/me/*` для сид-ученика kanat (s1):
-// openedUpTo=4, completed=[1,2], watched={3:40} — mock-data.ts.
+// openedUpTo=4, completed=[1,2], watched={3:40}, сдал тест урока 1 — mock-data.ts.
 
 beforeAll(async () => {
   const { accessToken } = await apiClient.post<Dto<"LoginResponseDto">>("/auth/login", {
@@ -15,14 +15,15 @@ beforeAll(async () => {
 });
 
 describe("GET /me/lessons", () => {
-  it("computes lessonState from openedUpTo/completed", async () => {
+  it("вычисляет lessonState: уроки открываются по порядку под тест-гейтом", async () => {
     const lessons = await apiClient.get<Dto<"LessonListItemDto">[]>("/me/lessons");
     expect(lessons).toHaveLength(54);
     const byOrder = (o: number) => lessons.find((l) => l.order === o)!;
     expect(byOrder(1).state).toBe("completed");
     expect(byOrder(2).state).toBe("completed");
+    // урок 3 — фронтир (1,2 завершены, тест 1 сдан); урок 4 закрыт, пока не завершён 3
     expect(byOrder(3).state).toBe("available");
-    expect(byOrder(4).state).toBe("available");
+    expect(byOrder(4).state).toBe("locked");
     expect(byOrder(5).state).toBe("locked");
   });
 
@@ -30,8 +31,37 @@ describe("GET /me/lessons", () => {
     const lessons = await apiClient.get<Dto<"LessonListItemDto">[]>("/me/lessons");
     const lesson1 = lessons.find((l) => l.order === 1)!;
     expect(lesson1.test?.questionCount).toBe(8);
-    // completed(1) + published test -> available (нет ещё попыток)
-    expect(lesson1.test?.availability).toBe("available");
+    // kanat сдал тест урока 1 на 88% (сид) -> availability "passed"
+    expect(lesson1.test?.availability).toBe("passed");
+    expect(lesson1.test?.bestScore).toBe(88);
+  });
+});
+
+describe("тест-гейт: непройденный тест закрывает следующий урок", () => {
+  it("у alina (s2) уроки 1–3 completed, но урок 4 закрыт — тест урока 1 не сдан", async () => {
+    const { accessToken } = await apiClient.post<Dto<"LoginResponseDto">>("/auth/login", {
+      login: "alina",
+      password: "test123",
+    });
+    setAccessToken(accessToken);
+
+    const lessons = await apiClient.get<Dto<"LessonListItemDto">[]>("/me/lessons");
+    const byOrder = (o: number) => lessons.find((l) => l.order === o)!;
+    expect(byOrder(3).state).toBe("completed");
+    expect(byOrder(4).state).toBe("locked");
+    expect(byOrder(1).test?.availability).toBe("available"); // урок 1 завершён, тест не начат
+
+    // прямой watch по закрытому уроку тоже отклоняется гейтом
+    await expect(
+      apiClient.post("/me/lessons/4/watch", { pct: 95 }),
+    ).rejects.toMatchObject({ status: 403 });
+
+    // назад на kanat для остальных тестов файла
+    const back = await apiClient.post<Dto<"LoginResponseDto">>("/auth/login", {
+      login: "kanat",
+      password: "test123",
+    });
+    setAccessToken(back.accessToken);
   });
 });
 
@@ -42,7 +72,8 @@ describe("GET /me/lessons/:order", () => {
     expect(lesson.watchedPct).toBe(40);
     expect(lesson.prev).toEqual({ order: 2, title: expect.any(String) });
     expect(lesson.next).toEqual({ order: 4, title: expect.any(String) });
-    expect(lesson.nextLocked).toBe(false); // next.order(4) <= openedUpTo(4)
+    // урок 4 закрыт, пока не завершён текущий урок 3 (тест-гейт / порядок)
+    expect(lesson.nextLocked).toBe(true);
     expect(lesson.videoUrl).not.toBe("");
   });
 
@@ -73,7 +104,7 @@ describe("GET /me/dashboard", () => {
 describe("GET /me/course", () => {
   it("reports the product and per-block status", async () => {
     const course = await apiClient.get<Dto<"MeCourseDto">>("/me/course");
-    expect(course.productTitle).toBe("English Group");
+    expect(course.productTitle).toBe("English Group · 6 месяцев");
     expect(course.completed).toBe(2);
     expect(course.total).toBe(54);
     expect(course.blocks.find((b) => b.block === "Foundation")?.status).toBe("current");

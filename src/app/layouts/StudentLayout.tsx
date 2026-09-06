@@ -5,7 +5,8 @@ import { useSessionQuery } from "@/entities/session";
 import { useLogoutMutation } from "@/features/auth";
 import { paths } from "@/shared/config";
 import { cn } from "@/shared/lib";
-import { Avatar, Balance, Logo, ThemeToggle } from "@/shared/ui";
+import { Avatar, Balance, Logo } from "@/shared/ui";
+// ThemeToggle временно не подключён — только светлая тема (см. ThemeEffect.tsx).
 
 // Порт english-flow/src/components/StudentShell.tsx. Гвард роли уже отработал в
 // loader маршрута (app/router/guards.ts) — здесь только рендер шелла + защитный
@@ -75,15 +76,12 @@ export function Component() {
               </p>
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <button
-              onClick={handleLogout}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <LogOut className="size-3.5" /> Выйти
-            </button>
-            <ThemeToggle />
-          </div>
+          <button
+            onClick={handleLogout}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <LogOut className="size-3.5" /> Выйти
+          </button>
         </div>
       </aside>
 
@@ -92,7 +90,6 @@ export function Component() {
         <Logo />
         <div className="flex items-center gap-2.5">
           <Balance amount={0} />
-          <ThemeToggle />
           <Avatar name={fullName} tone={student.avatarTone} size="sm" />
         </div>
       </header>

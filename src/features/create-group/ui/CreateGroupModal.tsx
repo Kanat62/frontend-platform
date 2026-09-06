@@ -19,6 +19,7 @@ export function CreateGroupModal({ onClose }: { onClose: () => void }) {
 
   const [f, setF] = useState({
     language: "en" as LanguageCode,
+    durationMonths: 6 as 3 | 6,
     startDate: "2026-09-14",
     start: "20:00",
     end: "21:00",
@@ -31,6 +32,7 @@ export function CreateGroupModal({ onClose }: { onClose: () => void }) {
     create.mutate(
       {
         language: f.language,
+        durationMonths: f.durationMonths,
         startDate: f.startDate,
         practiceStart: f.start,
         practiceEnd: f.end,
@@ -73,6 +75,19 @@ export function CreateGroupModal({ onClose }: { onClose: () => void }) {
               options={[
                 { value: "en", label: "English" },
                 { value: "ru", label: "Русский" },
+              ]}
+            />
+          </label>
+          <label className="text-xs font-semibold text-muted-foreground">
+            Тариф
+            <Select
+              className="mt-1"
+              ariaLabel="Тариф"
+              value={String(f.durationMonths)}
+              onChange={(v) => setF({ ...f, durationMonths: (Number(v) as 3 | 6) })}
+              options={[
+                { value: "6", label: "6 месяцев" },
+                { value: "3", label: "3 месяца" },
               ]}
             />
           </label>

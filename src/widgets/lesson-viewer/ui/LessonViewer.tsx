@@ -150,7 +150,12 @@ export function LessonViewer({ order }: { order: number }) {
 
       {lesson.next && lesson.nextLocked && (
         <p className="rounded-2xl border border-dashed border-border px-4 py-3 text-xs text-muted-foreground">
-          Следующий урок пока закрыт. Куратор откроет его после текущего этапа.
+          {lesson.state === "completed" &&
+          lesson.test &&
+          lesson.test.availability !== "passed" &&
+          lesson.test.availability !== "locked"
+            ? "Следующий урок откроется, как только вы сдадите тест этого урока на проходной балл."
+            : "Следующий урок пока закрыт. Куратор откроет его после текущего этапа."}
         </p>
       )}
     </div>

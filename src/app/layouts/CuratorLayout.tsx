@@ -13,7 +13,8 @@ import { useSessionQuery } from "@/entities/session";
 import { useLogoutMutation } from "@/features/auth";
 import { paths } from "@/shared/config";
 import { cn } from "@/shared/lib";
-import { Avatar, Logo, ThemeToggle } from "@/shared/ui";
+import { Avatar, Logo } from "@/shared/ui";
+// ThemeToggle временно не подключён — только светлая тема (см. ThemeEffect.tsx).
 
 // Порт english-flow/src/components/CuratorShell.tsx. Гвард роли — в loader
 // маршрута (app/router/guards.ts).
@@ -80,30 +81,24 @@ export function Component() {
               <p className="text-[11px] text-muted-foreground">Куратор · Преподаватель</p>
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <button
-              onClick={handleLogout}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="size-3.5" /> Выйти
-            </button>
-            <ThemeToggle />
-          </div>
+          <button
+            onClick={handleLogout}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="size-3.5" /> Выйти
+          </button>
         </div>
       </aside>
 
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/85 px-4 py-3 backdrop-blur lg:hidden">
         <Logo />
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <button
-            onClick={handleLogout}
-            aria-label="Выйти"
-            className="grid size-9 place-items-center rounded-xl border border-border text-muted-foreground"
-          >
-            <LogOut className="size-4" />
-          </button>
-        </div>
+        <button
+          onClick={handleLogout}
+          aria-label="Выйти"
+          className="grid size-9 place-items-center rounded-xl border border-border text-muted-foreground"
+        >
+          <LogOut className="size-4" />
+        </button>
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 lg:pl-64 lg:pr-6 lg:pt-8 lg:pb-12">

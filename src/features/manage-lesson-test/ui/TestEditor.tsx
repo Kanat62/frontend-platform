@@ -17,17 +17,17 @@ function onApiError(fallback: string) {
 // Порт «Тест к уроку» из curator.course.$order.tsx (LessonEditorPage). Текстовые
 // поля сохраняются по `onBlur`, а не на каждое нажатие (как в group-detail
 // meetUrl) — реф. хранит их в клиентском сторе, у нас это сетевой запрос.
-export function TestEditor({ lessonOrder }: { lessonOrder: number }) {
-  const testQuery = useTestEditorQuery(lessonOrder);
-  const createTest = useCreateTestMutation(lessonOrder);
+export function TestEditor({ lessonId }: { lessonId: string }) {
+  const testQuery = useTestEditorQuery(lessonId);
+  const createTest = useCreateTestMutation(lessonId);
   const test = testQuery.data;
 
-  const updateTest = useUpdateTestMutation(test?.id ?? "", lessonOrder);
-  const deleteTest = useDeleteTestMutation(test?.id ?? "", lessonOrder);
-  const addQuestion = useAddQuestionMutation(test?.id ?? "", lessonOrder);
-  const updateQuestion = useUpdateQuestionMutation(lessonOrder);
-  const deleteQuestion = useDeleteQuestionMutation(lessonOrder);
-  const updateOption = useUpdateOptionMutation(lessonOrder);
+  const updateTest = useUpdateTestMutation(test?.id ?? "", lessonId);
+  const deleteTest = useDeleteTestMutation(test?.id ?? "", lessonId);
+  const addQuestion = useAddQuestionMutation(test?.id ?? "", lessonId);
+  const updateQuestion = useUpdateQuestionMutation(lessonId);
+  const deleteQuestion = useDeleteQuestionMutation(lessonId);
+  const updateOption = useUpdateOptionMutation(lessonId);
 
   if (testQuery.isPending) {
     return (

@@ -3,9 +3,18 @@ import { PAGE_SIZE, TODAY } from "@/shared/config";
 import { daysLeft, generatePassword } from "@/shared/lib";
 import type { Dto } from "@/shared/api/schema";
 import { db } from "../db";
-import { badRequest, notFound, requireCurator } from "../context";
-import { courseProduct, type Student } from "../seed-data/mock-data";
 import {
+  badRequest,
+  lessonsOfProduct,
+  notFound,
+  productById,
+  productIdOfStudent,
+  requireCurator,
+  testsOfProduct,
+} from "../context";
+import { productIdFor, type Student } from "../seed-data/mock-data";
+import {
+  bestAttempt,
   currentLessonOrder,
   effectiveAccessStatus,
   filterStudents,
@@ -26,7 +35,9 @@ import {
  * `students` (роль C) — BACKEND.md §12. Список/детали/мутации ученика.
  * Один эндпоинт на вкладку карточки (`overview/learning/practice/progress`) —
  * так задокументировано в BACKEND.md; данные шапки карточки (общие для всех
- * вкладок) — отдельный `GET /students/:id`.
+ * вкладок) — отдельный `GET /students/:id`. У каждого продукта — свой набор
+ * уроков (TЗ §4.1): хендлеры резолвят `courseProductId` ученика перед чтением
+ * `db.lessons`/`db.tests`.
  */
 
 function paymentInfo(student: Student, currency: string): Dto<"PaymentInfoDto"> {
@@ -42,7 +53,9 @@ function paymentInfo(student: Student, currency: string): Dto<"PaymentInfoDto"> 
 }
 
 function studentListItem(student: Student): Dto<"StudentListItemDto"> {
-  const product = courseProduct(student.language, student.type);
+  const productId = productIdOfStudent(student);
+  const product = productById(productId);
+  const lessons = lessonsOfProduct(productId);
   const group = student.groupId ? db.groups.find((g) => g.id === student.groupId) : undefined;
   return {
     id: student.id,
@@ -53,21 +66,22 @@ function studentListItem(student: Student): Dto<"StudentListItemDto"> {
     phone: student.phone,
     language: student.language,
     type: student.type,
-    productTitle: product.title,
+    productTitle: product?.title ?? "",
     groupCode: group?.code ?? null,
     groupName: group?.name ?? null,
     startDate: student.startDate,
     endDate: student.endDate,
-    currentLessonOrder: currentLessonOrder(student),
-    lessonsTotal: db.lessons.length,
-    progressPct: progressOf(student),
-    payment: paymentInfo(student, product.currency),
+    currentLessonOrder: currentLessonOrder(student, lessons),
+    lessonsTotal: lessons.length,
+    progressPct: progressOf(student, lessons),
+    payment: paymentInfo(student, product?.currency ?? "сом"),
     lastActivity: student.lastActivity,
     accessStatus: effectiveAccessStatus(student),
   };
 }
 
 function studentHeader(student: Student): Dto<"StudentHeaderDto"> {
+  const lessons = lessonsOfProduct(productIdOfStudent(student));
   const meetings = meetingsFor(db.meetings, student);
   const nextMeeting = meetings.find((m) => m.status === "scheduled" && m.date >= TODAY);
   return {
@@ -82,10 +96,10 @@ function studentHeader(student: Student): Dto<"StudentHeaderDto"> {
     daysLeft: daysLeft(student.endDate),
     endDate: student.endDate,
     lastActivity: student.lastActivity,
-    currentLessonOrder: currentLessonOrder(student),
+    currentLessonOrder: currentLessonOrder(student, lessons),
     openedUpTo: student.openedUpTo,
-    lessonsTotal: db.lessons.length,
-    progressPct: progressOf(student),
+    lessonsTotal: lessons.length,
+    progressPct: progressOf(student, lessons),
     onboarded: student.onboarded,
     ...(nextMeeting ? { nextMeeting: { date: nextMeeting.date, startTime: nextMeeting.startTime } } : {}),
   };
@@ -130,17 +144,23 @@ export const studentsHandlers: HttpHandler[] = [
       return badRequest("Такой логин уже есть в базе — измените");
     }
 
-    const product = courseProduct(body.language, body.type);
     let group = body.groupId ? (db.groups.find((g) => g.id === body.groupId) ?? null) : null;
     if (body.type === "GROUP" && !group) {
       group = findMatchingGroup(db.groups, db.students, body.language, body.startDate, body.practiceStart) ?? null;
     }
+    // Продукт — из фактической группы (её тариф может быть 3 или 6 месяцев), а не
+    // угадан по языку+формату (BACKEND.md: CourseResolverService.forStudent).
+    const productId =
+      body.type === "INDIVIDUAL" ? productIdFor(body.language, "INDIVIDUAL", 1) : (group?.courseProductId ?? productIdFor(body.language, "GROUP", 6));
+    const product = productById(productId)!;
     const start = group ? group.startDate : body.startDate;
     const end = new Date(start);
     end.setMonth(end.getMonth() + product.durationMonths);
     const total = body.total ?? product.price;
     const paid = body.paid ?? 0;
-    const password = generatePassword(new Set(db.students.map((s) => s.password)));
+    // Пароль приходит с формы (клиентский предпросмотр, как в референсе); если по
+    // какой-то причине пуст — генерируем на сервере, чтобы учётка не осталась без пароля.
+    const password = body.password?.trim() || generatePassword(new Set(db.students.map((s) => s.password)));
 
     const student: Student = {
       id: `s-${Date.now()}`,
@@ -198,7 +218,7 @@ export const studentsHandlers: HttpHandler[] = [
     const student = db.students.find((s) => s.id === params.id);
     if (!student) return notFound("Ученик не найден");
 
-    const product = courseProduct(student.language, student.type);
+    const product = productById(productIdOfStudent(student))!;
     const group = groupOf(db.groups, student);
     const teacher = teacherOf(db.teachers, student.teacherId);
 
@@ -227,19 +247,38 @@ export const studentsHandlers: HttpHandler[] = [
     const student = db.students.find((s) => s.id === params.id);
     if (!student) return notFound("Ученик не найден");
 
-    const order = currentLessonOrder(student);
-    const product = courseProduct(student.language, student.type);
-    const ts = testsStats(student, db.tests, db.attempts);
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const product = productById(productId)!;
+    const order = currentLessonOrder(student, lessons);
+    const tests = testsOfProduct(productId);
+    const ts = testsStats(student, tests, db.attempts);
 
     const response: Dto<"StudentLearningDto"> = {
-      level: levelForLesson(product, order),
-      month: monthOfLesson(order),
+      level: levelForLesson(product, order, lessons.length),
+      month: monthOfLesson(order, lessons.length, product.durationMonths),
       currentLessonOrder: order,
       openedUpTo: student.openedUpTo,
       completedCount: student.completed.length,
       testsPassed: ts.passed,
       testsTotal: ts.total,
-      lessons: db.lessons.map((l) => ({ order: l.order, title: l.title, state: lessonState(student, l.order) })),
+      lessons: lessons.map((l) => {
+        const t = tests.find((x) => x.lessonOrder === l.order);
+        const best = t ? bestAttempt(db.attempts, student.id, t.id) : null;
+        return {
+          order: l.order,
+          title: l.title,
+          state: lessonState(student, lessons, l.order, tests, db.attempts),
+          test: t
+            ? {
+                published: t.status === "published",
+                bestScore: best?.score ?? null,
+                passed: best?.passed ?? null,
+                passingScore: t.passingScore,
+              }
+            : null,
+        };
+      }),
     };
     return HttpResponse.json(response);
   }),
@@ -278,14 +317,15 @@ export const studentsHandlers: HttpHandler[] = [
     const student = db.students.find((s) => s.id === params.id);
     if (!student) return notFound("Ученик не найден");
 
+    const productId = productIdOfStudent(student);
     const meetings = meetingsFor(db.meetings, student);
     const ps = practiceStats(meetings);
-    const ts = testsStats(student, db.tests, db.attempts);
+    const ts = testsStats(student, testsOfProduct(productId), db.attempts);
 
     const response: Dto<"StudentProgressDto"> = {
       completedCount: student.completed.length,
-      lessonsTotal: db.lessons.length,
-      progressPct: progressOf(student),
+      lessonsTotal: lessonsOfProduct(productId).length,
+      progressPct: progressOf(student, lessonsOfProduct(productId)),
       testsPassed: ts.passed,
       testsTotal: ts.total,
       practiceAttended: ps.attended,
@@ -379,8 +419,9 @@ export const studentsHandlers: HttpHandler[] = [
     if (!student) return notFound("Ученик не найден");
     if (student.type !== "INDIVIDUAL") return badRequest("Доступно только для Individual");
 
+    const lessons = lessonsOfProduct(productIdOfStudent(student));
     const body = (await request.json()) as Dto<"OpenCloseLessonRequestDto">;
-    if (body.order < 1 || body.order > db.lessons.length) return badRequest("Некорректный номер урока");
+    if (body.order < 1 || body.order > lessons.length) return badRequest("Некорректный номер урока");
     student.openedUpTo = body.order;
     return HttpResponse.json(studentHeader(student));
   }),

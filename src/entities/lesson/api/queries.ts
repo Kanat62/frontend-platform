@@ -26,14 +26,15 @@ export function useLessonQuery(order: number) {
   return useQuery(lessonQueryOptions(order));
 }
 
-/** `GET /lessons/:order` (роль C) — редактор урока + статистика по ученикам. */
-export function lessonEditorQueryOptions(order: number) {
+/** `GET /courses/products/:productId/lessons/:order` (роль C) — редактор урока + статистика по ученикам. */
+export function lessonEditorQueryOptions(productId: string, order: number) {
   return queryOptions({
-    queryKey: qk.lessons.editor(order),
-    queryFn: () => apiClient.get<LessonEditorDetail>(`/lessons/${order}`),
+    queryKey: qk.lessons.editor(productId, order),
+    queryFn: () => apiClient.get<LessonEditorDetail>(`/courses/products/${productId}/lessons/${order}`),
+    enabled: Boolean(productId),
   });
 }
 
-export function useLessonEditorQuery(order: number) {
-  return useQuery(lessonEditorQueryOptions(order));
+export function useLessonEditorQuery(productId: string, order: number) {
+  return useQuery(lessonEditorQueryOptions(productId, order));
 }

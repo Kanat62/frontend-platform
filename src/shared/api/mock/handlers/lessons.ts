@@ -1,15 +1,24 @@
 import { http, HttpResponse, type HttpHandler } from "msw";
 import type { Dto } from "@/shared/api/schema";
 import { db } from "../db";
-import { badRequest, notFound, requireCurator } from "../context";
-import type { Lesson } from "../seed-data/mock-data";
+import {
+  badRequest,
+  lessonsOfProduct,
+  notFound,
+  productById,
+  productIdOfStudent,
+  requireCurator,
+} from "../context";
+import { lessonId, type Lesson } from "../seed-data/mock-data";
 
 /**
- * `courses/lessons` — BACKEND.md §12: каталог + редактор (текст/видео) + статистика.
+ * `courses/products/:productId/lessons` — BACKEND.md §12: каталог + редактор
+ * (текст/видео) + статистика — уроки ОДНОГО продукта (TЗ §4.1, у каждой
+ * категории свой независимый набор).
  */
 
-function hasPractice(order: number): boolean {
-  return db.meetings.some((m) => m.lessonOrder === order);
+function hasPractice(courseProductId: string, order: number): boolean {
+  return db.meetings.some((m) => m.courseProductId === courseProductId && m.lessonOrder === order);
 }
 
 function lessonEditorDto(lesson: Lesson): Dto<"LessonEditorDto"> {
@@ -17,13 +26,15 @@ function lessonEditorDto(lesson: Lesson): Dto<"LessonEditorDto"> {
   let inProgress = 0;
   let completed = 0;
   for (const s of db.students) {
+    if (productIdOfStudent(s) !== lesson.courseProductId) continue;
     if (s.openedUpTo < lesson.order) continue;
     opened++;
-    if (s.completed.includes(lesson.order)) completed++;
-    else if ((s.watched[lesson.order] ?? 0) > 0) inProgress++;
+    if (s.completed.includes(lesson.id)) completed++;
+    else if ((s.watched[lesson.id] ?? 0) > 0) inProgress++;
   }
 
   return {
+    id: lesson.id,
     order: lesson.order,
     title: lesson.title,
     description: lesson.description,
@@ -35,34 +46,66 @@ function lessonEditorDto(lesson: Lesson): Dto<"LessonEditorDto"> {
 }
 
 export const lessonsHandlers: HttpHandler[] = [
-  http.get("*/lessons", ({ request }) => {
+  http.get("*/courses/products/:productId/lessons", ({ request, params }) => {
     const guard = requireCurator(request);
     if (guard) return guard;
 
-    const response: Dto<"LessonCatalogItemDto">[] = db.lessons.map((l) => ({
+    const productId = String(params.productId);
+    const response: Dto<"LessonCatalogItemDto">[] = lessonsOfProduct(productId).map((l) => ({
+      id: l.id,
       order: l.order,
       title: l.title,
       block: l.block,
       duration: l.duration,
-      hasPractice: hasPractice(l.order),
+      hasPractice: hasPractice(productId, l.order),
     }));
     return HttpResponse.json(response);
   }),
 
-  http.get("*/lessons/:order([^./]+)", ({ request, params }) => {
+  http.post("*/courses/products/:productId/lessons", async ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+
+    const productId = String(params.productId);
+    if (!productById(productId)) return notFound("Продукт не найден");
+
+    const body = (await request.json()) as Dto<"CreateLessonRequestDto">;
+    const title = (body.title ?? "").trim();
+    const block = (body.block ?? "").trim();
+    if (!title) return badRequest("Название не может быть пустым");
+    if (!block) return badRequest("Блок обязателен");
+
+    // Урок всегда добавляется в конец набора продукта — `order = max + 1`
+    // (TЗ §15 п.9; `order` уникален в пределах продукта).
+    const order = lessonsOfProduct(productId).reduce((max, l) => Math.max(max, l.order), 0) + 1;
+    const lesson: Lesson = {
+      id: lessonId(productId, order),
+      courseProductId: productId,
+      order,
+      title,
+      description: (body.description ?? "").trim(),
+      videoUrl: (body.videoUrl ?? "").trim(),
+      duration: (body.duration ?? "").trim() || "00:00",
+      block,
+    };
+    db.lessons.push(lesson);
+    return HttpResponse.json(lessonEditorDto(lesson), { status: 201 });
+  }),
+
+  http.get("*/courses/products/:productId/lessons/:order([^./]+)", ({ request, params }) => {
     const guard = requireCurator(request);
     if (guard) return guard;
     const order = Number(params.order);
-    const lesson = db.lessons.find((l) => l.order === order);
+    const lesson = lessonsOfProduct(String(params.productId)).find((l) => l.order === order);
     if (!lesson) return notFound("Урок не найден");
     return HttpResponse.json(lessonEditorDto(lesson));
   }),
 
-  http.patch("*/lessons/:order([^./]+)", async ({ request, params }) => {
+  http.patch("*/courses/products/:productId/lessons/:order([^./]+)", async ({ request, params }) => {
     const guard = requireCurator(request);
     if (guard) return guard;
     const order = Number(params.order);
-    const lesson = db.lessons.find((l) => l.order === order);
+    const lesson = lessonsOfProduct(String(params.productId)).find((l) => l.order === order);
     if (!lesson) return notFound("Урок не найден");
 
     const body = (await request.json()) as Dto<"UpdateLessonRequestDto">;

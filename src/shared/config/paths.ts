@@ -25,6 +25,7 @@ export const paths = {
     teacher: (id: string) => `/curator/teachers/${id}`,
     schedule: "/curator/schedule",
     course: "/curator/course",
-    lessonEditor: (order: number | string) => `/curator/course/${order}`,
+    courseProduct: (productId: string) => `/curator/course/${productId}`,
+    lessonEditor: (productId: string, order: number | string) => `/curator/course/${productId}/${order}`,
   },
 } as const;

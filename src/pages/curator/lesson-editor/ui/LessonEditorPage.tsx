@@ -5,12 +5,12 @@ import { LessonEditor } from "@/widgets/lesson-editor";
 
 // Порт curator.course.$order.tsx (composition + чтение params).
 export function LessonEditorPage() {
-  const { order } = useParams<{ order: string }>();
+  const { productId, order } = useParams<{ productId: string; order: string }>();
   const num = Number(order);
 
-  if (!order || Number.isNaN(num)) {
+  if (!productId || !order || Number.isNaN(num)) {
     return <EmptyState icon={Lock} title="Урок не найден" description="Проверьте ссылку или вернитесь к списку." />;
   }
 
-  return <LessonEditor order={num} />;
+  return <LessonEditor productId={productId} order={num} />;
 }

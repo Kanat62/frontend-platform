@@ -6,9 +6,17 @@ import { DEFAULT_LESSON_VIDEO_URL } from "@/shared/config";
 import { useReplaceLessonVideoMutation } from "../model/useReplaceLessonVideoMutation";
 
 // Порт «Заменить видео» / «Сбросить к стандартному» из curator.course.$order.tsx.
-export function ReplaceLessonVideoButton({ order, videoUrl }: { order: number; videoUrl: string }) {
+export function ReplaceLessonVideoButton({
+  productId,
+  order,
+  videoUrl,
+}: {
+  productId: string;
+  order: number;
+  videoUrl: string;
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const replace = useReplaceLessonVideoMutation(order);
+  const replace = useReplaceLessonVideoMutation(productId, order);
 
   const onError = (error: unknown) =>
     toast.error(error instanceof ApiError ? error.message : "Не удалось заменить видео");

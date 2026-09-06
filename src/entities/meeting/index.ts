@@ -10,3 +10,8 @@ export type {
 } from "./model/types";
 export { meetingsQueryOptions, useMeetingsQuery } from "./api/queries";
 export { MeetingPill } from "./ui/MeetingPill";
+export {
+  usePracticeJoinWindow,
+  formatCountdown,
+  type PracticeJoinWindow,
+} from "./model/joinWindow";

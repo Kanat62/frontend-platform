@@ -3,8 +3,18 @@ import { COMPLETE_THRESHOLD, TODAY } from "@/shared/config";
 import { daysLeft, weekRangeOf } from "@/shared/lib";
 import type { Dto } from "@/shared/api/schema";
 import { db } from "../db";
-import { currentStudent, forbidden, notFound, requireActiveAccess, unauthorized } from "../context";
-import { courseProduct, COURSE_STAGES, type Lesson, type Meeting, type Student } from "../seed-data/mock-data";
+import {
+  currentStudent,
+  forbidden,
+  lessonsOfProduct,
+  notFound,
+  productById,
+  productIdOfStudent,
+  requireActiveAccess,
+  testsOfProduct,
+  unauthorized,
+} from "../context";
+import type { Lesson, LessonTest, Meeting, Student } from "../seed-data/mock-data";
 import {
   activityDatesFor,
   bestAttempt,
@@ -31,6 +41,8 @@ import {
  * IDOR, TЗ §3.3). Вычисляемые поля (`accessStatus`, `lessonState`, `progress`,
  * `nextStep`, `testAvailability`, уровни/месяцы) считает MSW — так же, как
  * посчитает реальный бэкенд; фронт их не пересчитывает (FRONTEND.md §7).
+ * У каждого продукта — свой независимый набор уроков (TЗ §4.1): каждый хендлер
+ * сперва резолвит `courseProductId` студента, потом фильтрует `db.lessons`/`db.tests`.
  */
 
 function lessonSummary(lesson: Lesson): Dto<"LessonSummaryDto"> {
@@ -57,10 +69,15 @@ function meetingSummary(meeting: Meeting): Dto<"MeetingSummaryDto"> {
 }
 
 /** Встроенный в урок статус теста — TestRow в course-lesson-list и TestCard в lesson-viewer. */
-function lessonTestSummary(student: Student, order: number): Dto<"LessonTestSummaryDto"> | undefined {
-  const test = testForLesson(db.tests, order);
+function lessonTestSummary(
+  student: Student,
+  lessons: Lesson[],
+  tests: LessonTest[],
+  order: number,
+): Dto<"LessonTestSummaryDto"> | undefined {
+  const test = testForLesson(tests, order);
   if (!test) return undefined;
-  const availability = testAvailability(student, test, db.attempts);
+  const availability = testAvailability(student, lessons, test, db.attempts);
   const best = bestAttempt(db.attempts, student.id, test.id);
   return {
     title: test.title,
@@ -76,26 +93,32 @@ export const meHandlers: HttpHandler[] = [
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const tests = testsOfProduct(productId);
+    const usedBlocks = new Set(lessons.map((l) => l.block));
+    const stages = db.stages.filter((s) => usedBlocks.has(s.block));
+
     const meetings = meetingsFor(db.meetings, student);
     const week = weekRangeOf(TODAY);
-    const agenda = weekAgenda(student, db.lessons, db.tests, db.attempts, meetings, week);
-    const step = nextStepFor(student, db.lessons, db.tests, db.attempts, meetings);
-    const currentOrder = currentLessonOrder(student);
-    const currentLesson = db.lessons.find((l) => l.order === currentOrder) ?? null;
+    const agenda = weekAgenda(student, lessons, tests, db.attempts, meetings, week);
+    const step = nextStepFor(student, lessons, tests, db.attempts, meetings);
+    const currentOrder = currentLessonOrder(student, lessons);
+    const currentLesson = lessons.find((l) => l.order === currentOrder) ?? null;
 
-    const levels = courseLevels();
-    const statusOf = (l: (typeof levels)[number]) => levelStatus(student, db.lessons, l);
+    const levels = courseLevels(stages);
+    const statusOf = (l: (typeof levels)[number]) => levelStatus(student, lessons, stages, l);
     const currentLevel =
       levels.find((l) => statusOf(l) === "current") ??
       [...levels].reverse().find((l) => statusOf(l) === "completed") ??
       levels[0]!;
-    const levelBlocks = COURSE_STAGES.filter((s) => s.level === currentLevel).map((s) => s.block);
-    const levelLessons = db.lessons.filter((l) => levelBlocks.includes(l.block));
-    const levelDone = levelLessons.filter((l) => student.completed.includes(l.order)).length;
+    const levelBlocks = stages.filter((s) => s.level === currentLevel).map((s) => s.block);
+    const levelLessons = lessons.filter((l) => levelBlocks.includes(l.block));
+    const levelDone = levelLessons.filter((l) => student.completed.includes(l.id)).length;
     const percentInLevel = levelLessons.length ? Math.round((levelDone / levelLessons.length) * 100) : 0;
     const streak = streakDays(activityDatesFor(student, db.attempts, meetings));
 
-    let nextStep: Dto<"NextStepDto">;
+    let nextStep: Dto<"MeDashboardDto">["nextStep"];
     if (step.kind === "lesson") {
       nextStep = { kind: "lesson", lesson: lessonSummary(step.lesson) };
     } else if (step.kind === "test") {
@@ -129,7 +152,7 @@ export const meHandlers: HttpHandler[] = [
         level: currentLevel,
         percentInLevel,
         lessonsDone: student.completed.length,
-        lessonsTotal: db.lessons.length,
+        lessonsTotal: lessons.length,
         streakDays: streak,
         // TODO(TЗ §15.4): «Точность 87%» захардкожена в референсе (ProgressPanel) — воспроизведено как есть.
         accuracyPct: 87,
@@ -145,19 +168,24 @@ export const meHandlers: HttpHandler[] = [
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
-    const product = courseProduct(student.language, student.type);
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const product = productById(productId);
+    const usedBlocks = new Set(lessons.map((l) => l.block));
+    const stages = db.stages.filter((s) => usedBlocks.has(s.block));
+
     const response: Dto<"MeCourseDto"> = {
       language: student.language,
-      productTitle: product.title,
+      productTitle: product?.title ?? "",
       completed: student.completed.length,
-      total: db.lessons.length,
-      currentLessonOrder: currentLessonOrder(student),
-      blocks: COURSE_STAGES.map((stage) => ({
+      total: lessons.length,
+      currentLessonOrder: currentLessonOrder(student, lessons),
+      blocks: stages.map((stage) => ({
         block: stage.block,
         level: stage.level,
         month: stage.month,
         title: stage.title,
-        status: stageStatus(student, db.lessons, stage),
+        status: stageStatus(student, lessons, stage),
       })),
     };
     return HttpResponse.json(response);
@@ -167,12 +195,16 @@ export const meHandlers: HttpHandler[] = [
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
-    const response: Dto<"LessonListItemDto">[] = db.lessons.map((lesson) => {
-      const test = lessonTestSummary(student, lesson.order);
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const tests = testsOfProduct(productId);
+
+    const response: Dto<"LessonListItemDto">[] = lessons.map((lesson) => {
+      const test = lessonTestSummary(student, lessons, tests, lesson.order);
       return {
         ...lessonSummary(lesson),
         block: lesson.block,
-        state: lessonState(student, lesson.order),
+        state: lessonState(student, lessons, lesson.order, tests, db.attempts),
         ...(test ? { test } : {}),
       };
     });
@@ -183,15 +215,21 @@ export const meHandlers: HttpHandler[] = [
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const tests = testsOfProduct(productId);
     const order = Number(params.order);
-    const lesson = db.lessons.find((l) => l.order === order);
+    const lesson = lessons.find((l) => l.order === order);
     if (!lesson) return notFound("Урок не найден");
 
-    const state = lessonState(student, order);
-    const prevLesson = db.lessons.find((l) => l.order === order - 1);
-    const nextLesson = db.lessons.find((l) => l.order === order + 1);
-    const nextLocked = nextLesson ? nextLesson.order > student.openedUpTo : true;
-    const test = lessonTestSummary(student, order);
+    const state = lessonState(student, lessons, order, tests, db.attempts);
+    const prevLesson = lessons.find((l) => l.order === order - 1);
+    const nextLesson = lessons.find((l) => l.order === order + 1);
+    // «Следующий урок закрыт» = его нет ИЛИ он не available под тест-гейтом.
+    const nextLocked = nextLesson
+      ? lessonState(student, lessons, nextLesson.order, tests, db.attempts) !== "available"
+      : true;
+    const test = lessonTestSummary(student, lessons, tests, order);
 
     const response: Dto<"LessonDetailDto"> = {
       ...lessonSummary(lesson),
@@ -200,7 +238,7 @@ export const meHandlers: HttpHandler[] = [
       // Урок «закрыт» — видео не отдаём (то, что гейтит доступ, фронт не пересчитывает).
       // Тестовое видео (TЗ §4.3, курс/preview-video) временно подменяет видео во всех уроках.
       videoUrl: state === "locked" ? "" : (db.previewVideoUrl ?? lesson.videoUrl),
-      watchedPct: watchedPctOf(student, order),
+      watchedPct: watchedPctOf(student, lessons, order),
       ...(prevLesson ? { prev: { order: prevLesson.order, title: prevLesson.title } } : {}),
       ...(nextLesson ? { next: { order: nextLesson.order, title: nextLesson.title } } : {}),
       nextLocked,
@@ -215,29 +253,35 @@ export const meHandlers: HttpHandler[] = [
     const guard = requireActiveAccess(student);
     if (guard) return guard;
 
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const tests = testsOfProduct(productId);
     const order = Number(params.order);
-    const lesson = db.lessons.find((l) => l.order === order);
+    const lesson = lessons.find((l) => l.order === order);
     if (!lesson) return notFound("Урок не найден");
-    if (order > student.openedUpTo) return forbidden("Урок пока закрыт");
+    // Закрыт группой ИЛИ тест-гейтом (не сдан тест предыдущего урока).
+    if (lessonState(student, lessons, order, tests, db.attempts) === "locked") {
+      return forbidden("Урок пока закрыт");
+    }
 
     const body = (await request.json()) as Dto<"WatchProgressRequestDto">;
-    const wasCompleted = student.completed.includes(order);
+    const wasCompleted = student.completed.includes(lesson.id);
     let completedJustNow = false;
 
     // Порт `updateWatchProgress`/`completeLesson` из store.tsx (BACKEND.md §7.2):
     // прогресс — максимум с уже сохранённым; завершение — авто при пересечении порога.
-    student.watched = { ...student.watched, [order]: Math.max(student.watched[order] ?? 0, body.pct) };
+    student.watched = { ...student.watched, [lesson.id]: Math.max(student.watched[lesson.id] ?? 0, body.pct) };
     if (!wasCompleted && body.pct / 100 >= COMPLETE_THRESHOLD) {
-      student.completed = [...student.completed, order];
-      student.completedAt = { ...student.completedAt, [order]: TODAY };
-      student.watched = { ...student.watched, [order]: 100 };
+      student.completed = [...student.completed, lesson.id];
+      student.completedAt = { ...student.completedAt, [lesson.id]: TODAY };
+      student.watched = { ...student.watched, [lesson.id]: 100 };
       completedJustNow = true;
     }
     student.lastActivity = TODAY;
 
     const response: Dto<"WatchProgressResponseDto"> = {
-      watchedPct: watchedPctOf(student, order),
-      state: lessonState(student, order),
+      watchedPct: watchedPctOf(student, lessons, order),
+      state: lessonState(student, lessons, order, tests, db.attempts),
       completedJustNow,
     };
     return HttpResponse.json(response);
@@ -247,9 +291,12 @@ export const meHandlers: HttpHandler[] = [
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
+    const productId = productIdOfStudent(student);
+    const lessons = lessonsOfProduct(productId);
+    const tests = testsOfProduct(productId);
     const meetings = meetingsFor(db.meetings, student);
     const week = weekRangeOf(TODAY);
-    const days = weekPlan(student, db.lessons, db.tests, db.attempts, meetings, week);
+    const days = weekPlan(student, lessons, tests, db.attempts, meetings, week);
     const response: Dto<"MeScheduleDayDto">[] = days;
     return HttpResponse.json(response);
   }),
@@ -258,9 +305,11 @@ export const meHandlers: HttpHandler[] = [
     const student = currentStudent(request);
     if (!student) return unauthorized();
 
+    const productId = productIdOfStudent(student);
+    const tests = testsOfProduct(productId);
     const meetings = meetingsFor(db.meetings, student);
     const practice = practiceStats(meetings);
-    const tests = testsStats(student, db.tests, db.attempts);
+    const testsStatsResult = testsStats(student, tests, db.attempts);
 
     const response: Dto<"MeProfileDto"> = {
       firstName: student.firstName,
@@ -274,9 +323,9 @@ export const meHandlers: HttpHandler[] = [
       phone: student.phone,
       login: student.login,
       lessonsCompleted: student.completed.length,
-      lessonsTotal: db.lessons.length,
-      testsPassed: tests.passed,
-      testsTotal: tests.total,
+      lessonsTotal: lessonsOfProduct(productId).length,
+      testsPassed: testsStatsResult.passed,
+      testsTotal: testsStatsResult.total,
       practiceTotal: practice.total,
       practiceAttended: practice.attended,
     };

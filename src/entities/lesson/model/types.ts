@@ -9,3 +9,4 @@ export type LessonTestSummary = Dto<"LessonTestSummaryDto">;
 /* ---------- куратор: редактор урока (шаг 6) ---------- */
 export type LessonEditorDetail = Dto<"LessonEditorDto">;
 export type UpdateLessonRequest = Dto<"UpdateLessonRequestDto">;
+export type CreateLessonRequest = Dto<"CreateLessonRequestDto">;

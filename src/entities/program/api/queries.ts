@@ -3,17 +3,19 @@ import { apiClient, qk } from "@/shared/api";
 import type { LessonCatalogItem } from "../model/types";
 
 /**
- * `GET /lessons` — каталог 54 уроков. Общий для `group-detail` («Доступ к
- * урокам», читает только `.order`) и `lesson-catalog` (шаг 6, читает всё).
+ * `GET /courses/products/:productId/lessons` — каталог уроков одного продукта.
+ * Общий для `group-detail` («Доступ к урокам», читает только `.order`, продукт —
+ * из группы) и `lesson-catalog` (шаг 6, читает всё, продукт — из карточки курса).
  */
-export function lessonCatalogQueryOptions() {
+export function lessonCatalogQueryOptions(productId: string) {
   return queryOptions({
-    queryKey: qk.lessons.catalog,
-    queryFn: () => apiClient.get<LessonCatalogItem[]>("/lessons"),
+    queryKey: qk.lessons.catalog(productId),
+    queryFn: () => apiClient.get<LessonCatalogItem[]>(`/courses/products/${productId}/lessons`),
     staleTime: 5 * 60_000,
+    enabled: Boolean(productId),
   });
 }
 
-export function useLessonCatalogQuery() {
-  return useQuery(lessonCatalogQueryOptions());
+export function useLessonCatalogQuery(productId: string) {
+  return useQuery(lessonCatalogQueryOptions(productId));
 }

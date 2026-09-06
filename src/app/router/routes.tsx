@@ -50,7 +50,8 @@ const routes: RouteObject[] = [
       { path: "teachers/:id", lazy: () => import("@/pages/curator/teacher-detail") },
       { path: "schedule", lazy: () => import("@/pages/curator/schedule") },
       { path: "course", lazy: () => import("@/pages/curator/course") },
-      { path: "course/:order", lazy: () => import("@/pages/curator/lesson-editor") },
+      { path: "course/:productId", lazy: () => import("@/pages/curator/course-product") },
+      { path: "course/:productId/:order", lazy: () => import("@/pages/curator/lesson-editor") },
     ],
   },
   {

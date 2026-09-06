@@ -71,15 +71,15 @@ export function LoginForm() {
             type="button"
             onClick={() => setShow(!show)}
             aria-label="Показать пароль"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
           >
-            {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {show ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
           </button>
         </div>
         <button
           type="submit"
           disabled={login.isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-bold text-primary-foreground shadow-glow transition hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
+          className="flex w-full items-center mt-5 cursor-pointer justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-bold text-primary-foreground shadow-glow transition hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
         >
           Войти <ArrowRight className="size-4" />
         </button>
