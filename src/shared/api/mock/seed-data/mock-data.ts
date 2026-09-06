@@ -301,7 +301,7 @@ export const LESSONS: Lesson[] = [
   ...lessonsFor("ru-individual-1mo", INDIVIDUAL_TITLES),
 ].map((lesson, i) => ({
   ...lesson,
-  videoUrl: "/Video%20Project%201.mp4",
+  videoUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
   duration: `${10 + ((i * 7) % 12)}:${String((i * 13) % 60).padStart(2, "0")}`,
 }));
 

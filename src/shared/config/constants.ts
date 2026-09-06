@@ -9,8 +9,12 @@ export const COMPLETE_THRESHOLD = 0.9;
 /** Таймзона школы. TЗ §6.14. */
 export const SCHOOL_TZ = "Asia/Bishkek";
 
-/** Стандартное видео уроков в сиде (TЗ §4.3) — «Заменить видео» сбрасывается на него. */
-export const DEFAULT_LESSON_VIDEO_URL = "/Video%20Project%201.mp4";
+/**
+ * Стандартное видео уроков (TЗ §4.3) — «Заменить видео» сбрасывается на него.
+ * Внешний sample вместо 27-МБ файла в репо; реальные уроки грузятся в Bunny.
+ */
+export const DEFAULT_LESSON_VIDEO_URL =
+  "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
 /**
  * Недельный ритм теория/практика/выходной (индекс 0 = понедельник). Общий для
