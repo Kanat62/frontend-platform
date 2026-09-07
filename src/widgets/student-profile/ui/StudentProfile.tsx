@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { CalendarDays, LogOut, Phone, Target, User2 } from "lucide-react";
+import { CalendarDays, LogOut, Phone, User2, UserCog } from "lucide-react";
 import { paths } from "@/shared/config";
 import { formatFull } from "@/shared/lib";
 import { Avatar, SectionTitle } from "@/shared/ui";
@@ -65,11 +65,16 @@ export function StudentProfile() {
       </div>
 
       <section>
-        <SectionTitle title="Цель" icon={Target} />
-        <div className="surface-card p-5 text-sm">
-          {/* TODO(TЗ §15.4): цель захардкожена в референсе — воспроизведено как есть. */}
-          <p className="font-bold">Уверенно говорить по-английски</p>
-        </div>
+        <SectionTitle title="Куратор" icon={UserCog} />
+        <a
+          href="https://wa.me/996702928197"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="surface-card flex w-full items-center gap-3 p-5 text-sm transition hover:bg-muted/40"
+        >
+          <UserCog className="size-5 shrink-0 text-primary" />
+          <span className="font-bold">Связаться с куратором</span>
+        </a>
       </section>
 
       <section>
