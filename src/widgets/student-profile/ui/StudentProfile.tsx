@@ -29,8 +29,7 @@ export function StudentProfile() {
   }
 
   const rows = [
-    // TODO(TЗ §15.4): «Курс: English» захардкожено в референсе (даже для RU-ученика) — воспроизведено как есть.
-    { icon: User2, label: "Курс", value: "English" },
+    { icon: User2, label: "Курс", value: profile.language === "en" ? "English" : "Русский" },
     { icon: User2, label: "Тип обучения", value: profile.type === "GROUP" ? "Групповой" : "Индивидуальный" },
     { icon: CalendarDays, label: "Начало обучения", value: formatFull(profile.startDate) },
     { icon: CalendarDays, label: "Окончание доступа", value: formatFull(profile.endDate) },
