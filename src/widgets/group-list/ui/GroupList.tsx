@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { GraduationCap, Plus } from "lucide-react";
 import { paths } from "@/shared/config";
+import { pluralRu } from "@/shared/lib";
 import { Avatar, EmptyState, LangPill, Select } from "@/shared/ui";
 import { GroupStatusPill, useGroupsQuery } from "@/entities/group";
 import { CreateGroupModal } from "@/features/create-group";
@@ -86,6 +87,9 @@ export function GroupList() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <LangPill code={g.language} />
+                <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-bold text-primary">
+                  {g.durationMonths} {pluralRu(g.durationMonths, "месяц", "месяца", "месяцев")}
+                </span>
                 <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
                   {g.studentCount} / {g.maxStudents} учеников
                 </span>

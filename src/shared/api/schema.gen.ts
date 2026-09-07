@@ -1538,6 +1538,8 @@ export interface components {
             /** @enum {string} */
             language: "en" | "ru";
             courseProductId: string;
+            /** @enum {number} */
+            durationMonths: 3 | 6;
             /** @enum {string} */
             status: "recruiting" | "active" | "finished" | "archived";
             startDate: string;
@@ -1618,6 +1620,8 @@ export interface components {
             /** @enum {string} */
             language: "en" | "ru";
             courseProductId: string;
+            /** @enum {number} */
+            durationMonths: 3 | 6;
             /** @enum {string} */
             status: "recruiting" | "active" | "finished" | "archived";
             startDate: string;

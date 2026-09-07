@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { ArrowLeft, BookOpen, CalendarClock, Lock, Unlock, Users } from "lucide-react";
 import { toast } from "sonner";
-import { ApiError, formatDate, formatFull, weekdayFull } from "@/shared/lib";
+import { ApiError, formatDate, formatFull, pluralRu, weekdayFull } from "@/shared/lib";
 import { paths, TODAY } from "@/shared/config";
 import { EmptyState, Pill, ProgressBar, SectionTitle, Select } from "@/shared/ui";
 import { StudentAvatar } from "@/entities/student";
@@ -62,6 +62,9 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
                 {g.language === "en" ? "English" : "Русский"}
+              </span>
+              <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-bold text-primary">
+                {g.durationMonths} {pluralRu(g.durationMonths, "месяц", "месяца", "месяцев")}
               </span>
               <GroupStatusPill status={g.status} />
               <Pill tone="neutral">
