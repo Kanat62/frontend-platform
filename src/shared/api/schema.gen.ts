@@ -1200,6 +1200,7 @@ export interface components {
             meetUrl?: string;
             startTime?: string;
             lessonOrder?: number;
+            blurNotice?: string;
         };
         MeProfileDto: {
             firstName: string;

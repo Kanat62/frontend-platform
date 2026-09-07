@@ -121,6 +121,8 @@ export interface WeekPlanDay {
   /** Время начала практики "HH:mm" — для окна подключения на клиенте. */
   startTime?: string;
   lessonOrder?: number;
+  /** Практика первой недели закрыта: текст оверлея поверх заблюренной карточки. */
+  blurNotice?: string;
 }
 
 const PLAN_RHYTHM: { kind: WeekPlanKind; offset: number }[] = [
@@ -156,17 +158,24 @@ export function weekPlan(
   const lessonAt = (offset: number) =>
     lessons.find((l) => l.order === currentOrder + offset) ?? lessons.find((l) => l.order === currentOrder);
   const groupRoom = meetings.find((m) => m.meetUrl)?.meetUrl;
+  // Первая учебная неделя ученика: старт пришёлся на текущую неделю (или позже).
+  const firstWeek = student.startDate >= (week[0] ?? student.startDate);
 
   return week.map((date, i) => {
     const slot = PLAN_RHYTHM[i % PLAN_RHYTHM.length] ?? PLAN_RHYTHM[0]!;
     const lesson = lessonAt(slot.offset);
-    const topic = lesson?.title ?? "английский";
+    const topic = lesson?.title ?? "занятие";
     const meeting = meetings.find((m) => m.date === date);
     const isRest = slot.kind === "rest";
+    const isPractice = slot.kind === "practice";
+    // Практика первой недели закрыта: новому ученику сначала нужно освоиться с теорией.
+    const practiceLocked = isPractice && firstWeek;
 
     let status: WeekPlanStatus;
     if (isRest) {
       status = "rest";
+    } else if (practiceLocked) {
+      status = "locked";
     } else if (date < today) {
       status = dayAgenda(student, lessons, tests, attempts, meetings, date).length > 0 ? "done" : "past";
     } else if (date === today) {
@@ -177,14 +186,17 @@ export function weekPlan(
 
     const meta = isRest
       ? "Отдыхай и возвращайся с новыми силами"
-      : slot.kind === "practice"
+      : isPractice
         ? meeting
           ? `${meeting.startTime}–${meeting.endTime} · групповая`
           : "21:00–22:00 · групповая"
-        : `Видео · ${lesson ? Number.parseInt(lesson.duration, 10) : 12} мин`;
+        : // Пока урок (и его видео) не заведён — не показываем «Видео · N мин».
+          lesson
+          ? `Видео · ${Number.parseInt(lesson.duration, 10)} мин`
+          : "";
 
-    const room = slot.kind === "practice" ? (meeting?.meetUrl ?? groupRoom) : undefined;
-    const startTime = slot.kind === "practice" ? (meeting?.startTime ?? "21:00") : undefined;
+    const room = isPractice && !practiceLocked ? (meeting?.meetUrl ?? groupRoom) : undefined;
+    const startTime = isPractice && !practiceLocked ? (meeting?.startTime ?? "21:00") : undefined;
 
     return {
       date,
@@ -197,6 +209,7 @@ export function weekPlan(
       ...(room ? { meetUrl: room } : {}),
       ...(startTime ? { startTime } : {}),
       ...(!isRest && lesson ? { lessonOrder: lesson.order } : {}),
+      ...(practiceLocked ? { blurNotice: "Практика начнётся со следующей недели" } : {}),
     };
   });
 }

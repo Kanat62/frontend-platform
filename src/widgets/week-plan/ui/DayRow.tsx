@@ -67,36 +67,52 @@ export function DayRow({ day, first, last }: { day: WeekPlanDay; first: boolean;
         </span>
       </div>
 
-      <div className={cn("flex min-h-41 min-w-0 flex-1 flex-col p-4", cardClass)}>
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-            {day.weekday} · {formatDate(day.date)}
-          </p>
-          <span
-            className={cn(
-              "shrink-0 text-[11px] font-bold uppercase tracking-wide",
-              s === "today" ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            {STATUS_LABEL[s]}
-          </span>
-        </div>
-
-        <div className="mt-2 flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
-            <Icon className="size-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className={cn("truncate text-sm font-extrabold", s === "rest" && "text-muted-foreground")}>
-              {day.title}
+      <div className={cn("relative flex min-h-41 min-w-0 flex-1 flex-col p-4", cardClass)}>
+        <div
+          className={cn(
+            "flex flex-1 flex-col",
+            day.blurNotice && "pointer-events-none select-none blur-[3px]",
+          )}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="truncate text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+              {day.weekday} · {formatDate(day.date)}
             </p>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{day.meta}</p>
+            <span
+              className={cn(
+                "shrink-0 text-[11px] font-bold uppercase tracking-wide",
+                s === "today" ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              {STATUS_LABEL[s]}
+            </span>
+          </div>
+
+          <div className="mt-2 flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+              <Icon className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={cn("truncate text-sm font-extrabold", s === "rest" && "text-muted-foreground")}>
+                {day.title}
+              </p>
+              {day.meta && <p className="mt-0.5 truncate text-xs text-muted-foreground">{day.meta}</p>}
+            </div>
+          </div>
+
+          <div className="mt-auto">
+            <DayAction day={day} />
           </div>
         </div>
 
-        <div className="mt-auto">
-          <DayAction day={day} />
-        </div>
+        {day.blurNotice && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface/95 px-3 py-2 text-center text-xs font-bold text-muted-foreground shadow-lift">
+              <Lock className="size-3.5 shrink-0" />
+              {day.blurNotice}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
