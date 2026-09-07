@@ -13,6 +13,7 @@ import { LessonAccessList } from "@/features/open-lesson-for-group";
 import { useUpdateGroupMutation } from "@/features/edit-group";
 import { useAssignTeacherToGroupMutation } from "@/features/assign-teacher-to-group";
 import { ScheduleGroupMeetingForm } from "@/features/schedule-meeting";
+import { DeleteGroupButton } from "@/features/delete-group";
 
 function dayKindLabel(date: string): string {
   const idx = (new Date(date).getDay() + 6) % 7; // 0=Пн … 6=Вс
@@ -96,6 +97,10 @@ export function GroupDetail({ groupId }: { groupId: string }) {
               <p className="text-[11px] text-muted-foreground">{x.l}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4">
+          <DeleteGroupButton groupId={g.id} name={g.name} />
         </div>
       </header>
 

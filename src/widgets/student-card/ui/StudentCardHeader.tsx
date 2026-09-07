@@ -3,6 +3,7 @@ import { formatDate } from "@/shared/lib";
 import { LangPill, Pill, ProgressBar, Select } from "@/shared/ui";
 import { AccessPill, StudentAvatar, type AccessStatus, type StudentHeader } from "@/entities/student";
 import { useUpdateStudentAccessMutation, useUpdateStudentMutation } from "@/features/edit-student-access";
+import { DeleteStudentButton } from "@/features/delete-student";
 
 // Порт шапки StudentCard из curator.students.$id.tsx.
 export function StudentCardHeader({ student }: { student: StudentHeader }) {
@@ -87,6 +88,7 @@ export function StudentCardHeader({ student }: { student: StudentHeader }) {
             Завершить onboarding
           </button>
         )}
+        <DeleteStudentButton studentId={student.id} name={`${student.firstName} ${student.lastName}`} />
       </div>
     </header>
   );

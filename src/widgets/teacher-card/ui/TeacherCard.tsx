@@ -17,6 +17,7 @@ import {
 } from "@/entities/teacher";
 import { useUpdateTeacherStatusMutation } from "@/features/edit-teacher-status";
 import { useAssignTeacherToGroupMutation } from "@/features/assign-teacher-to-group";
+import { DeleteTeacherButton } from "@/features/delete-teacher";
 
 // Порт TeacherCard из curator.teachers.$id.tsx.
 export function TeacherCard({ teacherId }: { teacherId: string }) {
@@ -95,6 +96,10 @@ export function TeacherCard({ teacherId }: { teacherId: string }) {
               <p className="text-[11px] text-muted-foreground">{x.l}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4">
+          <DeleteTeacherButton teacherId={t.id} name={t.name} />
         </div>
       </header>
 

@@ -5,6 +5,7 @@ import { ApiError, formatDate, weekdayFull } from "@/shared/lib";
 import { EmptyState, Pill, SectionTitle } from "@/shared/ui";
 import { MeetingPill, useMeetingsQuery, type MeetingStatus } from "@/entities/meeting";
 import { AttendanceList, ScheduleMeetingForm, useUpdateMeetingMutation } from "@/features/schedule-meeting";
+import { DeleteMeetingButton } from "@/features/delete-meeting";
 import { RANGES, useScheduleRange } from "../model/useScheduleRange";
 
 // Порт CuratorSchedule из curator.schedule.tsx.
@@ -123,6 +124,10 @@ export function ScheduleBoard() {
                             ) : (
                               <span className="text-xs font-bold text-warning">нет ссылки</span>
                             )}
+                            <DeleteMeetingButton
+                              meetingId={m.id}
+                              title={m.groupName ?? m.studentName ?? m.title}
+                            />
                           </div>
                           <AttendanceList meeting={m} />
                         </div>

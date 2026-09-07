@@ -142,7 +142,7 @@ export interface paths {
         get: operations["LessonsController_editor"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["LessonsController_remove"];
         options?: never;
         head?: never;
         patch: operations["LessonsController_update"];
@@ -527,7 +527,7 @@ export interface paths {
         get: operations["StudentsController_header"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["StudentsController_remove"];
         options?: never;
         head?: never;
         patch: operations["StudentsController_updateContact"];
@@ -703,7 +703,7 @@ export interface paths {
         get: operations["GroupsController_detail"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["GroupsController_remove"];
         options?: never;
         head?: never;
         patch: operations["GroupsController_update"];
@@ -831,7 +831,7 @@ export interface paths {
         get: operations["TeachersController_detail"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["TeachersController_remove"];
         options?: never;
         head?: never;
         patch: operations["TeachersController_update"];
@@ -863,7 +863,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["MeetingsController_remove"];
         options?: never;
         head?: never;
         patch: operations["MeetingsController_update"];
@@ -2059,6 +2059,26 @@ export interface operations {
             };
         };
     };
+    LessonsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+                order: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     LessonsController_update: {
         parameters: {
             query?: never;
@@ -2679,6 +2699,25 @@ export interface operations {
             };
         };
     };
+    StudentsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     StudentsController_updateContact: {
         parameters: {
             query?: never;
@@ -2975,6 +3014,25 @@ export interface operations {
             };
         };
     };
+    GroupsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     GroupsController_update: {
         parameters: {
             query?: never;
@@ -3222,6 +3280,25 @@ export interface operations {
             };
         };
     };
+    TeachersController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     TeachersController_update: {
         parameters: {
             query?: never;
@@ -3290,6 +3367,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ScheduleMeetingDto"];
                 };
+            };
+        };
+    };
+    MeetingsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

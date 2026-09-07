@@ -7,6 +7,7 @@ import { useLessonEditorQuery } from "@/entities/lesson";
 import { LessonContentForm } from "@/features/edit-lesson-content";
 import { ReplaceLessonVideoButton } from "@/features/replace-lesson-video";
 import { TestEditor } from "@/features/manage-lesson-test";
+import { DeleteLessonButton } from "@/features/delete-lesson";
 
 // Порт LessonEditorPage из curator.course.$order.tsx.
 export function LessonEditor({ productId, order }: { productId: string; order: number }) {
@@ -62,6 +63,14 @@ export function LessonEditor({ productId, order }: { productId: string; order: n
       </section>
 
       <TestEditor lessonId={l.id} />
+
+      <section className="surface-card space-y-2 p-5">
+        <SectionTitle title="Опасная зона" />
+        <p className="text-xs text-muted-foreground">
+          Урок удалится вместе с тестом, практиками и прогрессом. Следующие уроки перенумеруются.
+        </p>
+        <DeleteLessonButton productId={productId} order={l.order} title={l.title} />
+      </section>
     </div>
   );
 }
