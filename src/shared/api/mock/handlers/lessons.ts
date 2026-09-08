@@ -122,6 +122,33 @@ export const lessonsHandlers: HttpHandler[] = [
     },
   ),
 
+  // Провизорный контракт: привязать к уроку видео другого урока без повторной
+  // заливки (features/link-lesson-video). В моке нет Bunny-GUID — переносим
+  // `videoUrl` донора, что и есть «то же видео».
+  http.post(
+    "*/courses/products/:productId/lessons/:order([^./]+)/video/link-from",
+    async ({ request, params }) => {
+      const guard = requireCurator(request);
+      if (guard) return guard;
+
+      const order = Number(params.order);
+      const target = lessonsOfProduct(String(params.productId)).find((l) => l.order === order);
+      if (!target) return notFound("Урок не найден");
+
+      const body = (await request.json()) as { sourceProductId?: string; sourceOrder?: number };
+      const source = lessonsOfProduct(String(body.sourceProductId ?? "")).find(
+        (l) => l.order === Number(body.sourceOrder),
+      );
+      if (!source) return notFound("Урок-донор не найден");
+      if (source.id === target.id) return badRequest("Нельзя привязать урок к самому себе");
+      if (source.videoUrl.trim() === "") return badRequest("У урока-донора нет видео");
+
+      target.videoUrl = source.videoUrl;
+      target.duration = source.duration;
+      return HttpResponse.json(lessonEditorDto(target));
+    },
+  ),
+
   http.patch("*/courses/products/:productId/lessons/:order([^./]+)", async ({ request, params }) => {
     const guard = requireCurator(request);
     if (guard) return guard;

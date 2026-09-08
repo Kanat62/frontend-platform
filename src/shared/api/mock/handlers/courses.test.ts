@@ -24,6 +24,26 @@ describe("GET /courses/products", () => {
   });
 });
 
+describe("GET /courses/video-library", () => {
+  it("lists lessons with an uploaded video across all products", async () => {
+    const items = await apiClient.get<
+      {
+        productId: string;
+        order: number;
+        lessonTitle: string;
+        videoStatus: string;
+        videoDurationSec: number | null;
+      }[]
+    >("/courses/video-library");
+
+    expect(items.length).toBeGreaterThan(100);
+    expect(items.every((it) => it.lessonTitle && it.videoStatus === "ready")).toBe(true);
+    // Донор для урока EN 6-мес можно взять из EN 3-мес — оба продукта в каталоге.
+    expect(items.some((it) => it.productId === "en-group-3mo")).toBe(true);
+    expect(items.some((it) => it.productId === "en-group-6mo")).toBe(true);
+  });
+});
+
 describe("courses/preview-video", () => {
   it("starts unset and can be set/cleared, affecting the student-facing lesson video", async () => {
     const initial = await apiClient.get<Dto<"PreviewVideoDto">>("/courses/preview-video");

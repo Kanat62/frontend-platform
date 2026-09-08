@@ -6,6 +6,7 @@ import { VideoPlayer } from "@/shared/ui";
 import { useLessonEditorQuery } from "@/entities/lesson";
 import { LessonContentForm } from "@/features/edit-lesson-content";
 import { ReplaceLessonVideoButton } from "@/features/replace-lesson-video";
+import { LinkLessonVideoButton } from "@/features/link-lesson-video";
 import { TestEditor } from "@/features/manage-lesson-test";
 import { DeleteLessonButton } from "@/features/delete-lesson";
 
@@ -59,7 +60,14 @@ export function LessonEditor({ productId, order }: { productId: string; order: n
         ) : (
           <VideoPlayer src={l.videoUrl} className="aspect-video w-full rounded-xl" />
         )}
-        <ReplaceLessonVideoButton productId={productId} order={l.order} videoUrl={l.videoUrl} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ReplaceLessonVideoButton productId={productId} order={l.order} videoUrl={l.videoUrl} />
+          <LinkLessonVideoButton productId={productId} order={l.order} />
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          «Взять видео из другого курса» покажет здесь то же видео, что в выбранном уроке, без
+          повторной загрузки в Bunny — удобно для одинаковых уроков 3- и 6-месячного курсов.
+        </p>
       </section>
 
       <TestEditor lessonId={l.id} />

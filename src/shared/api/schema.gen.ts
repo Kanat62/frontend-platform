@@ -100,6 +100,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/courses/video-library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CoursesController_videoLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/courses/preview-video": {
         parameters: {
             query?: never;
@@ -158,6 +174,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["LessonsController_requestVideoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/courses/products/{productId}/lessons/{order}/video/link-from": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["LessonsController_linkVideoFrom"];
         delete?: never;
         options?: never;
         head?: never;
@@ -962,6 +994,22 @@ export interface components {
             level: "A1" | "A2" | "B1" | "B2";
             month: number;
         };
+        VideoLibraryItemDto: {
+            productId: string;
+            productTitle: string;
+            /** @enum {string} */
+            language: "en" | "ru";
+            /** @enum {string} */
+            format: "GROUP" | "INDIVIDUAL";
+            durationMonths: number;
+            lessonId: string;
+            /** @description Номер урока в пределах его продукта. */
+            order: number;
+            lessonTitle: string;
+            /** @enum {string} */
+            videoStatus: "processing" | "ready" | "failed";
+            videoDurationSec: number | null;
+        };
         PreviewVideoDto: {
             url: string | null;
         };
@@ -1014,6 +1062,12 @@ export interface components {
             headers: {
                 [key: string]: string;
             };
+        };
+        LinkLessonVideoRequestDto: {
+            /** @description Продукт урока-донора. Может совпадать с продуктом целевого урока. */
+            sourceProductId: string;
+            /** @description Номер урока-донора в его продукте (>= 1). */
+            sourceOrder: number;
         };
         UpdateLessonRequestDto: {
             title?: string;
@@ -1954,6 +2008,25 @@ export interface operations {
             };
         };
     };
+    CoursesController_videoLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoLibraryItemDto"][];
+                };
+            };
+        };
+    };
     CoursesController_previewVideo: {
         parameters: {
             query?: never;
@@ -2128,6 +2201,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VideoUploadTicketDto"];
+                };
+            };
+        };
+    };
+    LessonsController_linkVideoFrom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                productId: string;
+                order: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkLessonVideoRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LessonEditorDto"];
                 };
             };
         };

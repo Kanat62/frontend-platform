@@ -98,3 +98,43 @@ describe("POST /courses/products/:productId/lessons", () => {
     ).rejects.toMatchObject({ status: 404 });
   });
 });
+
+describe("POST /courses/products/:productId/lessons/:order/video/link-from", () => {
+  it("shows the donor lesson's video on the target without re-upload", async () => {
+    await apiClient.patch<Dto<"LessonEditorDto">>("/courses/products/en-group-3mo/lessons/5", {
+      videoUrl: "blob:donor-shared-video",
+    });
+
+    const linked = await apiClient.post<Dto<"LessonEditorDto">>(
+      "/courses/products/en-group-6mo/lessons/3/video/link-from",
+      { sourceProductId: "en-group-3mo", sourceOrder: 5 },
+    );
+    expect(linked.order).toBe(3);
+    expect(linked.videoUrl).toBe("blob:donor-shared-video");
+
+    // Донор не теряет своё видео — оба урока показывают один файл.
+    const donor = await apiClient.get<Dto<"LessonEditorDto">>("/courses/products/en-group-3mo/lessons/5");
+    expect(donor.videoUrl).toBe("blob:donor-shared-video");
+  });
+
+  it("404s for an unknown donor or target, 400s for linking a lesson to itself", async () => {
+    await expect(
+      apiClient.post("/courses/products/en-group-6mo/lessons/3/video/link-from", {
+        sourceProductId: "en-group-3mo",
+        sourceOrder: 999,
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      apiClient.post("/courses/products/en-group-6mo/lessons/999/video/link-from", {
+        sourceProductId: "en-group-3mo",
+        sourceOrder: 5,
+      }),
+    ).rejects.toMatchObject({ status: 404 });
+    await expect(
+      apiClient.post("/courses/products/en-group-6mo/lessons/3/video/link-from", {
+        sourceProductId: "en-group-6mo",
+        sourceOrder: 3,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+});

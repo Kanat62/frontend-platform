@@ -61,6 +61,8 @@ export const qk = {
   courses: {
     products: ["courses", "products"] as const,
     previewVideo: ["courses", "preview-video"] as const,
+    /** Все уроки всех продуктов с залитым видео — донор для «взять видео из другого курса». */
+    videoLibrary: ["courses", "video-library"] as const,
   },
   curatorDashboard: ["curator", "dashboard"] as const,
 } as const;

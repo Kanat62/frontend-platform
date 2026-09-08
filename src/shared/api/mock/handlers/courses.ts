@@ -28,6 +28,33 @@ export const coursesHandlers: HttpHandler[] = [
     return HttpResponse.json(response);
   }),
 
+  http.get("*/courses/video-library", ({ request }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+
+    // Мок не моделирует Bunny — «есть видео» == непустой videoUrl (в сиде он у
+    // всех уроков). Длительность в моке неизвестна → null.
+    const productsById = new Map(db.products.map((p) => [p.id, p]));
+    const response: Dto<"VideoLibraryItemDto">[] = db.lessons
+      .filter((l) => l.videoUrl.trim() !== "")
+      .map((l) => {
+        const p = productsById.get(l.courseProductId);
+        return {
+          productId: l.courseProductId,
+          productTitle: p?.title ?? l.courseProductId,
+          language: (p?.language ?? "en") as "en" | "ru",
+          format: (p?.format ?? "GROUP") as "GROUP" | "INDIVIDUAL",
+          durationMonths: p?.durationMonths ?? 0,
+          lessonId: l.id,
+          order: l.order,
+          lessonTitle: l.title,
+          videoStatus: "ready",
+          videoDurationSec: null,
+        };
+      });
+    return HttpResponse.json(response);
+  }),
+
   http.put("*/courses/preview-video", async ({ request }) => {
     const guard = requireCurator(request);
     if (guard) return guard;
