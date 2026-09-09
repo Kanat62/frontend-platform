@@ -258,7 +258,13 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
                   setF({ ...f, groupChoice: v });
                 }}
                 placeholder="Нет подходящей группы — выберите вручную"
-                options={languageGroups.map((g) => ({ value: g.id, label: g.name }))}
+                options={languageGroups.map((g) => ({
+                  value: g.id,
+                  // Тип курса (3- или 6-месячный) сразу после кода группы — по
+                  // одному имени формат не виден (durationMonths — отдельное поле),
+                  // а в конце строки подпись обрезается по ширине селекта.
+                  label: g.name.replace(`${g.code} · `, `${g.code} · ${g.durationMonths} мес · `),
+                }))}
               />
               <span className="mt-1 block text-[11px] font-normal text-muted-foreground">
                 {f.groupChoice && !groupTouched
