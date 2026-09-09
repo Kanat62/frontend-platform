@@ -200,6 +200,9 @@ export const studentsHandlers: HttpHandler[] = [
       login: student.login,
       password,
       groupName: group?.name ?? null,
+      phone: student.phone,
+      language: student.language,
+      durationMonths: product.durationMonths,
     };
     return HttpResponse.json(response, { status: 201 });
   }),

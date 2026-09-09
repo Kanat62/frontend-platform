@@ -83,6 +83,10 @@ describe("POST /students", () => {
     expect(created.login).toBe("test-e2e-student");
     // Пароль с формы возвращается как есть (сервер только хеширует).
     expect(created.password).toBe("swxyz");
+    // Поля для приветственного сообщения куратора (экран «Ученик создан»).
+    expect(created.phone).toBe("");
+    expect(created.language).toBe("en");
+    expect(created.durationMonths).toBe(1); // INDIVIDUAL — 1 месяц
 
     const header = await apiClient.get<Dto<"StudentHeaderDto">>(`/students/${created.id}`);
     expect(header.firstName).toBe("Тест");

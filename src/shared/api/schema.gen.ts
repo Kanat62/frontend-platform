@@ -1502,6 +1502,12 @@ export interface components {
             login: string;
             password: string;
             groupName: string | null;
+            /** @description Телефон ученика — для приветственного сообщения куратора (копируется отдельной кнопкой). */
+            phone: string;
+            /** @enum {string} */
+            language: "en" | "ru";
+            /** @description Длительность курса в месяцах (из продукта зачисления) — для текста сообщения. */
+            durationMonths: number;
         };
         BulkPatchDto: {
             groupId?: string | null;

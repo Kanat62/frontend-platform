@@ -300,13 +300,43 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function CreatedPanel({ created, onClose }: { created: CreateStudentResponse; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
+/** Адрес платформы для приветственного сообщения — тот же origin, где сейчас куратор. */
+const PLATFORM_URL = typeof window !== "undefined" ? window.location.origin : "https://sozmor.vercel.app";
 
-  const copy = () => {
-    void navigator.clipboard.writeText(`Логин: ${created.login}\nПароль: ${created.password}`).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+/**
+ * Готовый текст, который куратор шлёт ученику в мессенджер (кыргызча). Язык и
+ * длительность курса подставляются из ответа сервера (он же решает, в какую
+ * группу и какой тариф зачислить), логин/пароль — оттуда же.
+ */
+function welcomeMessage(c: CreateStudentResponse): string {
+  const lang = c.language === "ru" ? "орус" : "англис";
+  return [
+    "Саламатсызбы! 😊",
+    "",
+    `Мен сиздин кураторуңуз болом. Сиз ${c.durationMonths} айлык ${lang} тили курсуна катталгансыз.`,
+    "",
+    "Сабактарыңызды биздин онлайн-платформа аркылуу өтөсүз. Бардык видео сабактар, тапшырмалар жана башка окуу материалдары платформанын ичинде болот.",
+    "",
+    "Платформага кирүү үчүн:",
+    "",
+    `🔗 ${PLATFORM_URL}`,
+    "",
+    `Логин: ${c.login}`,
+    `Сырсөз: ${c.password}`,
+    "",
+    "Платформага кирип, сабактарыңызды ошол жерден көрүп турсаңыз болот. Эгер кирүүдө кандайдыр бир көйгөй жаралса, мага жазсаңыз болот. 😊",
+  ].join("\n");
+}
+
+function CreatedPanel({ created, onClose }: { created: CreateStudentResponse; onClose: () => void }) {
+  const [copied, setCopied] = useState<"msg" | "phone" | null>(null);
+  const message = welcomeMessage(created);
+
+  const copy = (field: "msg" | "phone", text: string) => {
+    if (!text) return;
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(field);
+      setTimeout(() => setCopied(null), 1500);
     });
   };
 
@@ -316,7 +346,25 @@ function CreatedPanel({ created, onClose }: { created: CreateStudentResponse; on
       <p className="mt-1 text-xs text-muted-foreground">
         Сохраните пароль — сервер отдаёт его только один раз и больше не покажет.
       </p>
-      <div className="mt-4 space-y-2 rounded-xl bg-muted/70 p-4 text-left text-sm">
+
+      {/* Номер ученика — отдельной строкой сверху, со своей кнопкой копирования. */}
+      <div className="mt-4 flex items-center justify-between gap-2 rounded-xl bg-muted/70 px-4 py-3 text-left text-sm">
+        <span className="text-muted-foreground">Номер</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-bold">{created.phone || "—"}</span>
+          <button
+            type="button"
+            onClick={() => copy("phone", created.phone)}
+            disabled={!created.phone}
+            aria-label="Скопировать номер"
+            className="grid size-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground transition hover:text-foreground disabled:opacity-40"
+          >
+            {copied === "phone" ? <Check className="size-4" /> : <Copy className="size-4" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2 rounded-xl bg-muted/70 p-4 text-left text-sm">
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Логин</span>
           <span className="font-bold">{created.login}</span>
@@ -326,12 +374,18 @@ function CreatedPanel({ created, onClose }: { created: CreateStudentResponse; on
           <span className="font-mono font-bold">{created.password}</span>
         </div>
       </div>
+
+      {/* Предпросмотр приветствия — ровно то, что уйдёт в буфер. */}
+      <pre className="mt-3 max-h-44 overflow-y-auto whitespace-pre-line wrap-break-word rounded-xl border border-border bg-surface p-3 text-left font-sans text-xs leading-relaxed text-muted-foreground">
+        {message}
+      </pre>
+
       <button
-        onClick={copy}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground"
+        onClick={() => copy("msg", message)}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground"
       >
-        {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-        {copied ? "Скопировано" : "Скопировать логин и пароль"}
+        {copied === "msg" ? <Check className="size-4" /> : <Copy className="size-4" />}
+        {copied === "msg" ? "Скопировано" : "Скопировать приветствие для ученика"}
       </button>
       <button onClick={onClose} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-bold text-primary-foreground shadow-glow">
         Готово
