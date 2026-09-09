@@ -7,6 +7,7 @@ import {
   forbidden,
   lessonsOfProduct,
   notFound,
+  productById,
   productIdOfStudent,
   requireActiveAccess,
   requireCurator,
@@ -248,6 +249,87 @@ export const testsHandlers: HttpHandler[] = [
     if (guard) return guard;
     const test = db.tests.find((t) => t.lessonId === params.lessonId);
     return HttpResponse.json(test ? editorDto(test) : null);
+  }),
+
+  // Каталог тестов-доноров для «взять тест из другого курса» — тесты всех
+  // продуктов с >= 1 вопросом (features/copy-lesson-test).
+  http.get("*/tests/library", ({ request }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+
+    const lessonsById = new Map(db.lessons.map((l) => [l.id, l]));
+    const response: Dto<"TestLibraryItemDto">[] = db.tests
+      .filter((t) => t.questions.length > 0)
+      .map((t) => {
+        const lesson = lessonsById.get(t.lessonId);
+        const product = lesson ? productById(lesson.courseProductId) : undefined;
+        return {
+          productId: product?.id ?? lesson?.courseProductId ?? "",
+          productTitle: product?.title ?? "",
+          language: (product?.language ?? "en") as "en" | "ru",
+          format: (product?.format ?? "GROUP") as "GROUP" | "INDIVIDUAL",
+          durationMonths: product?.durationMonths ?? 0,
+          lessonId: t.lessonId,
+          lessonOrder: lesson?.order ?? t.lessonOrder,
+          lessonTitle: lesson?.title ?? "",
+          testId: t.id,
+          testTitle: t.title,
+          status: t.status,
+          questionCount: t.questions.length,
+        };
+      })
+      .sort((a, b) => a.durationMonths - b.durationMonths || a.lessonOrder - b.lessonOrder);
+    return HttpResponse.json(response);
+  }),
+
+  // Скопировать в тест целевого урока содержимое теста-донора. Копия, не ссылка:
+  // тест жёстко привязан к уроку (LessonTest.lessonId).
+  http.post("*/tests/lesson/:lessonId([^./]+)/copy-from", async ({ request, params }) => {
+    const guard = requireCurator(request);
+    if (guard) return guard;
+
+    const targetLesson = db.lessons.find((l) => l.id === params.lessonId);
+    if (!targetLesson) return notFound("Урок не найден");
+
+    const body = (await request.json()) as { sourceLessonId?: string };
+    const sourceLessonId = body.sourceLessonId ?? "";
+    if (sourceLessonId === params.lessonId) return badRequest("Нельзя скопировать тест в тот же урок");
+
+    const source = db.tests.find((t) => t.lessonId === sourceLessonId);
+    if (!source) return notFound("Тест-донор не найден");
+    if (source.questions.length === 0) return badRequest("У теста-донора нет вопросов");
+
+    let target = db.tests.find((t) => t.lessonId === params.lessonId);
+    if (!target) {
+      target = {
+        id: `test-${Date.now()}`,
+        lessonId: targetLesson.id,
+        lessonOrder: targetLesson.order,
+        title: source.title,
+        timeLimitSec: 300,
+        passingScore: 70,
+        status: "draft",
+        questions: [],
+      };
+      db.tests.push(target);
+    }
+
+    target.timeLimitSec = source.timeLimitSec;
+    target.passingScore = source.passingScore;
+    const stamp = Date.now();
+    target.questions = source.questions.map((q, qi) => ({
+      id: `${target!.id}-q${stamp}-${qi}`,
+      text: q.text,
+      type: q.type,
+      order: q.order,
+      options: q.options.map((o, oi) => ({
+        id: `${target!.id}-q${stamp}-${qi}-o${oi}`,
+        text: o.text,
+        isCorrect: o.isCorrect,
+      })),
+    }));
+
+    return HttpResponse.json(editorDto(target), { status: 201 });
   }),
 
   http.post("*/tests", async ({ request }) => {

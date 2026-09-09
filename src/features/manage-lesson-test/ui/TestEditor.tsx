@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { FileText, Lock, Plus, Trash2, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/lib";
@@ -17,7 +18,15 @@ function onApiError(fallback: string) {
 // Порт «Тест к уроку» из curator.course.$order.tsx (LessonEditorPage). Текстовые
 // поля сохраняются по `onBlur`, а не на каждое нажатие (как в group-detail
 // meetUrl) — реф. хранит их в клиентском сторе, у нас это сетевой запрос.
-export function TestEditor({ lessonId }: { lessonId: string }) {
+export function TestEditor({
+  lessonId,
+  /** Действие «Взять тест из другого курса» — компонуется в widgets/lesson-editor
+   * (feature→feature импорт запрещён FSD, поэтому кнопка приходит слотом). */
+  actionsSlot,
+}: {
+  lessonId: string;
+  actionsSlot?: ReactNode;
+}) {
   const testQuery = useTestEditorQuery(lessonId);
   const createTest = useCreateTestMutation(lessonId);
   const test = testQuery.data;
@@ -44,13 +53,16 @@ export function TestEditor({ lessonId }: { lessonId: string }) {
       {!test ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-8 text-center">
           <p className="text-sm text-muted-foreground">У этого урока пока нет теста.</p>
-          <button
-            onClick={() => createTest.mutate(undefined, { onError: onApiError("Не удалось создать тест") })}
-            disabled={createTest.isPending}
-            className="inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
-          >
-            <Plus className="size-3.5" /> Создать тест
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => createTest.mutate(undefined, { onError: onApiError("Не удалось создать тест") })}
+              disabled={createTest.isPending}
+              className="inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
+            >
+              <Plus className="size-3.5" /> Создать тест
+            </button>
+            {actionsSlot}
+          </div>
         </div>
       ) : (
         <>
@@ -125,6 +137,7 @@ export function TestEditor({ lessonId }: { lessonId: string }) {
                 <Unlock className="size-3.5" /> Опубликовать
               </button>
             )}
+            {actionsSlot && <span className="ml-auto">{actionsSlot}</span>}
             <button
               onClick={() => {
                 if (!window.confirm("Удалить тест вместе со всеми вопросами?")) return;
@@ -133,7 +146,7 @@ export function TestEditor({ lessonId }: { lessonId: string }) {
                   onError: onApiError("Не удалось удалить тест"),
                 });
               }}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-bold text-muted-foreground transition hover:text-destructive"
+              className={`inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-bold text-muted-foreground transition hover:text-destructive ${actionsSlot ? "" : "ml-auto"}`}
             >
               <Trash2 className="size-3.5" /> Удалить тест
             </button>

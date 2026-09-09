@@ -4,10 +4,12 @@ import { paths } from "@/shared/config";
 import { EmptyState, SectionTitle } from "@/shared/ui";
 import { VideoPlayer } from "@/shared/ui";
 import { useLessonEditorQuery } from "@/entities/lesson";
+import { useTestEditorQuery } from "@/entities/lesson-test";
 import { LessonContentForm } from "@/features/edit-lesson-content";
 import { ReplaceLessonVideoButton } from "@/features/replace-lesson-video";
 import { LinkLessonVideoButton } from "@/features/link-lesson-video";
 import { TestEditor } from "@/features/manage-lesson-test";
+import { CopyLessonTestButton } from "@/features/copy-lesson-test";
 import { DeleteLessonButton } from "@/features/delete-lesson";
 
 // Порт LessonEditorPage из curator.course.$order.tsx.
@@ -32,6 +34,18 @@ export function LessonEditor({ productId, order }: { productId: string; order: n
   }
 
   const l = lesson.data;
+
+  return <LessonEditorView productId={productId} lesson={l} />;
+}
+
+function LessonEditorView({
+  productId,
+  lesson: l,
+}: {
+  productId: string;
+  lesson: NonNullable<ReturnType<typeof useLessonEditorQuery>["data"]>;
+}) {
+  const test = useTestEditorQuery(l.id);
 
   return (
     <div className="max-w-3xl space-y-5 rise-in">
@@ -70,7 +84,16 @@ export function LessonEditor({ productId, order }: { productId: string; order: n
         </p>
       </section>
 
-      <TestEditor lessonId={l.id} />
+      <TestEditor
+        lessonId={l.id}
+        actionsSlot={
+          <CopyLessonTestButton
+            productId={productId}
+            lessonId={l.id}
+            hasExistingTest={Boolean(test.data)}
+          />
+        }
+      />
 
       <section className="surface-card space-y-2 p-5">
         <SectionTitle title="Опасная зона" />

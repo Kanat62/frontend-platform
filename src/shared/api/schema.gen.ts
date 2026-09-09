@@ -421,6 +421,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tests/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TestsEditorController_library"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tests/lesson/{id}/copy-from": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TestsEditorController_copyFrom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tests": {
         parameters: {
             query?: never;
@@ -1343,6 +1375,28 @@ export interface components {
         };
         CreateTestRequestDto: {
             lessonId: string;
+        };
+        TestLibraryItemDto: {
+            productId: string;
+            productTitle: string;
+            /** @enum {string} */
+            language: "en" | "ru";
+            /** @enum {string} */
+            format: "GROUP" | "INDIVIDUAL";
+            durationMonths: number;
+            lessonId: string;
+            /** @description Номер урока-донора в пределах его продукта. */
+            lessonOrder: number;
+            lessonTitle: string;
+            testId: string;
+            testTitle: string;
+            /** @enum {string} */
+            status: "draft" | "published";
+            questionCount: number;
+        };
+        CopyTestFromRequestDto: {
+            /** @description Урок-донор — его тест копируется в целевой урок. */
+            sourceLessonId: string;
         };
         TestEditorOptionDto: {
             id: string;
@@ -2522,6 +2576,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TestsEditorController_library: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestLibraryItemDto"][];
+                };
+            };
+        };
+    };
+    TestsEditorController_copyFrom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyTestFromRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestEditorDto"];
+                };
             };
         };
     };

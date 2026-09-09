@@ -249,3 +249,75 @@ describe("curator: редактор теста — BACKEND.md §12 (tests). Ур
     expect(gone).toBeNull();
   });
 });
+
+describe("curator: взять тест из другого курса — GET /tests/library, POST /tests/lesson/:id/copy-from", () => {
+  beforeAll(async () => {
+    const { accessToken } = await apiClient.post<Dto<"LoginResponseDto">>("/auth/login", {
+      login: "curator",
+      password: "test123",
+    });
+    setAccessToken(accessToken);
+  });
+
+  // Донор — сеяный test-1 на уроке 1 продукта en-group-6mo (8 вопросов, published).
+  async function sourceLesson() {
+    return apiClient.get<Dto<"LessonEditorDto">>("/courses/products/en-group-6mo/lessons/1");
+  }
+  async function targetLesson() {
+    return apiClient.get<Dto<"LessonEditorDto">>("/courses/products/en-group-3mo/lessons/2");
+  }
+
+  it("library lists donor tests with product language and question count", async () => {
+    const src = await sourceLesson();
+    const library = await apiClient.get<Dto<"TestLibraryItemDto">[]>("/tests/library");
+    const donor = library.find((t) => t.lessonId === src.id);
+    expect(donor).toBeDefined();
+    expect(donor!.language).toBe("en");
+    expect(donor!.questionCount).toBe(8);
+    // Пустые тесты (без вопросов) в каталог не попадают.
+    expect(library.every((t) => t.questionCount > 0)).toBe(true);
+  });
+
+  it("copies questions + options into a lesson without a test (as draft)", async () => {
+    const src = await sourceLesson();
+    const dst = await targetLesson();
+
+    const copied = await apiClient.post<Dto<"TestEditorDto">>(`/tests/lesson/${dst.id}/copy-from`, {
+      sourceLessonId: src.id,
+    });
+    expect(copied.lessonId).toBe(dst.id);
+    expect(copied.lessonOrder).toBe(2);
+    expect(copied.status).toBe("draft");
+    expect(copied.questions).toHaveLength(8);
+    expect(copied.passingScore).toBe(70);
+    // Варианты и флаг правильности перенесены; id новые (не совпадают с донором).
+    const src4 = await apiClient.get<Dto<"TestEditorDto">>(`/tests/lesson/${src.id}`);
+    expect(copied.questions[0]!.options).toHaveLength(src4.questions[0]!.options.length);
+    expect(copied.questions[0]!.options[0]!.id).not.toBe(src4.questions[0]!.options[0]!.id);
+    expect(copied.questions[0]!.options.filter((o) => o.isCorrect)).toHaveLength(1);
+
+    // Правки скопированного теста не трогают донор (это копия, не ссылка).
+    await apiClient.patch(`/tests/${copied.id}`, { title: "Изменённый" });
+    const donorAgain = await apiClient.get<Dto<"TestEditorDto">>(`/tests/lesson/${src.id}`);
+    expect(donorAgain.title).toBe("Тест к уроку 1");
+
+    await apiClient.delete(`/tests/${copied.id}`);
+  });
+
+  it("400 when source lesson == target lesson", async () => {
+    const src = await sourceLesson();
+    await expect(
+      apiClient.post(`/tests/lesson/${src.id}/copy-from`, { sourceLessonId: src.id }),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("404 when the source lesson has no test", async () => {
+    const dst = await targetLesson();
+    const emptyLesson = await apiClient.get<Dto<"LessonEditorDto">>(
+      "/courses/products/en-individual-1mo/lessons/3",
+    );
+    await expect(
+      apiClient.post(`/tests/lesson/${dst.id}/copy-from`, { sourceLessonId: emptyLesson.id }),
+    ).rejects.toMatchObject({ status: 404 });
+  });
+});

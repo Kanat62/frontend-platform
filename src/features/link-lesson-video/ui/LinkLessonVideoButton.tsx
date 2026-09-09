@@ -64,8 +64,10 @@ function LinkVideoModal({
   const currentLanguage = products.data?.find((p) => p.id === productId)?.language;
 
   const groups = useMemo(() => {
+    // Только курсы того же языка обучения (EN не показывает RU и наоборот); свой
+    // же урок из списка убираем.
     const items = (library.data ?? []).filter(
-      (it) => !(it.productId === productId && it.order === order),
+      (it) => it.language === currentLanguage && !(it.productId === productId && it.order === order),
     );
     const byProduct = new Map<string, VideoLibraryItem[]>();
     for (const it of items) {
@@ -79,10 +81,7 @@ function LinkVideoModal({
         lessons: [...list].sort((a, b) => a.order - b.order),
       }))
       .sort((a, b) => {
-        // Сначала тот же язык обучения, что у текущего продукта, затем по длительности.
-        const sameA = a.product.language === currentLanguage ? 0 : 1;
-        const sameB = b.product.language === currentLanguage ? 0 : 1;
-        if (sameA !== sameB) return sameA - sameB;
+        // По длительности курса, затем по названию.
         if (a.product.durationMonths !== b.product.durationMonths)
           return a.product.durationMonths - b.product.durationMonths;
         return a.product.productTitle.localeCompare(b.product.productTitle);
@@ -105,7 +104,8 @@ function LinkVideoModal({
     );
   };
 
-  const isEmpty = !library.isPending && !library.isError && groups.length === 0;
+  const languageReady = Boolean(currentLanguage);
+  const isEmpty = languageReady && !library.isPending && !library.isError && groups.length === 0;
 
   return (
     <Modal onClose={onClose} scrollable>
@@ -121,7 +121,7 @@ function LinkVideoModal({
         </p>
 
         <div className="mt-4 max-h-[55vh] space-y-4 overflow-y-auto pr-1">
-          {library.isPending ? (
+          {!languageReady || library.isPending ? (
             <div className="h-40 animate-pulse rounded-2xl bg-muted/40" />
           ) : library.isError ? (
             <p className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
@@ -129,7 +129,7 @@ function LinkVideoModal({
             </p>
           ) : isEmpty ? (
             <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-              Ни в одном курсе ещё нет загруженного видео, которое можно переиспользовать.
+              В курсах того же языка ещё нет загруженного видео, которое можно переиспользовать.
             </p>
           ) : (
             groups.map(({ product, lessons }) => (

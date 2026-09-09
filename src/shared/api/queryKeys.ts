@@ -57,6 +57,8 @@ export const qk = {
   },
   tests: {
     editor: (lessonId: string) => ["tests", lessonId, "editor"] as const,
+    /** Все тесты всех продуктов с вопросами — донор для «взять тест из другого курса». */
+    library: ["tests", "library"] as const,
   },
   courses: {
     products: ["courses", "products"] as const,
