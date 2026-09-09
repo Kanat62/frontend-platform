@@ -25,9 +25,13 @@ export {
   useStudentsQuery,
   studentHeaderQueryOptions,
   useStudentHeaderQuery,
+  studentOverviewQueryOptions,
   useStudentOverviewQuery,
+  studentLearningQueryOptions,
   useStudentLearningQuery,
+  studentPracticeQueryOptions,
   useStudentPracticeQuery,
+  studentProgressQueryOptions,
   useStudentProgressQuery,
 } from "./api/queries";
 export { AccessPill } from "./ui/AccessPill";

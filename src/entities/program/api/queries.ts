@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { apiClient, qk } from "@/shared/api";
 import type { LessonCatalogItem } from "../model/types";
 
@@ -12,6 +12,7 @@ export function lessonCatalogQueryOptions(productId: string) {
     queryKey: qk.lessons.catalog(productId),
     queryFn: () => apiClient.get<LessonCatalogItem[]>(`/courses/products/${productId}/lessons`),
     staleTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
     enabled: Boolean(productId),
   });
 }

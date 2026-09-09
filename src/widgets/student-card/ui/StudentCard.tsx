@@ -1,8 +1,16 @@
+import { useEffect } from "react";
 import { Link } from "react-router";
 import { ArrowLeft, Lock } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { paths } from "@/shared/config";
 import { EmptyState } from "@/shared/ui";
-import { useStudentHeaderQuery } from "@/entities/student";
+import {
+  studentLearningQueryOptions,
+  studentOverviewQueryOptions,
+  studentPracticeQueryOptions,
+  studentProgressQueryOptions,
+  useStudentHeaderQuery,
+} from "@/entities/student";
 import { useActiveTab, TABS } from "../model/useActiveTab";
 import { StudentCardHeader } from "./StudentCardHeader";
 import { OverviewTab } from "./OverviewTab";
@@ -16,6 +24,16 @@ import { PaymentTab } from "./PaymentTab";
 export function StudentCard({ studentId }: { studentId: string }) {
   const header = useStudentHeaderQuery(studentId);
   const [tab, setTab] = useActiveTab();
+  const queryClient = useQueryClient();
+
+  // Префетч остальных вкладок карточки — переключение вкладок без ожидания сети
+  // (данные уже в кэше). Запускается, как только известен id ученика.
+  useEffect(() => {
+    void queryClient.prefetchQuery(studentOverviewQueryOptions(studentId));
+    void queryClient.prefetchQuery(studentLearningQueryOptions(studentId));
+    void queryClient.prefetchQuery(studentPracticeQueryOptions(studentId));
+    void queryClient.prefetchQuery(studentProgressQueryOptions(studentId));
+  }, [queryClient, studentId]);
 
   return (
     <div className="space-y-5 overflow-x-hidden rise-in">

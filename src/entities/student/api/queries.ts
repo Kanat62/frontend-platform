@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { apiClient, qk, type StudentFilters } from "@/shared/api";
 import type {
   StudentHeader,
@@ -27,6 +27,9 @@ export function studentsQueryOptions(filters: StudentFilters) {
   return queryOptions({
     queryKey: qk.students.list(filters),
     queryFn: () => apiClient.get<StudentsList>(`/students?${studentsSearchParams(filters)}`),
+    // Смена фильтра/страницы/поиска не гасит таблицу в скелетон — предыдущие
+    // строки остаются на экране, пока едет новый ответ (isPlaceholderData → лёгкое затемнение).
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -45,30 +48,50 @@ export function useStudentHeaderQuery(id: string) {
   return useQuery(studentHeaderQueryOptions(id));
 }
 
-export function useStudentOverviewQuery(id: string) {
-  return useQuery({
+export function studentOverviewQueryOptions(id: string) {
+  return queryOptions({
     queryKey: qk.students.overview(id),
     queryFn: () => apiClient.get<StudentOverview>(`/students/${id}/overview`),
+    staleTime: 60_000,
+  });
+}
+
+export function useStudentOverviewQuery(id: string) {
+  return useQuery(studentOverviewQueryOptions(id));
+}
+
+export function studentLearningQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: qk.students.learning(id),
+    queryFn: () => apiClient.get<StudentLearning>(`/students/${id}/learning`),
+    staleTime: 60_000,
   });
 }
 
 export function useStudentLearningQuery(id: string) {
-  return useQuery({
-    queryKey: qk.students.learning(id),
-    queryFn: () => apiClient.get<StudentLearning>(`/students/${id}/learning`),
+  return useQuery(studentLearningQueryOptions(id));
+}
+
+export function studentPracticeQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: qk.students.practice(id),
+    queryFn: () => apiClient.get<StudentPractice>(`/students/${id}/practice`),
+    staleTime: 60_000,
   });
 }
 
 export function useStudentPracticeQuery(id: string) {
-  return useQuery({
-    queryKey: qk.students.practice(id),
-    queryFn: () => apiClient.get<StudentPractice>(`/students/${id}/practice`),
+  return useQuery(studentPracticeQueryOptions(id));
+}
+
+export function studentProgressQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: qk.students.progress(id),
+    queryFn: () => apiClient.get<StudentProgress>(`/students/${id}/progress`),
+    staleTime: 60_000,
   });
 }
 
 export function useStudentProgressQuery(id: string) {
-  return useQuery({
-    queryKey: qk.students.progress(id),
-    queryFn: () => apiClient.get<StudentProgress>(`/students/${id}/progress`),
-  });
+  return useQuery(studentProgressQueryOptions(id));
 }

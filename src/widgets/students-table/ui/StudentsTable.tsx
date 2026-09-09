@@ -133,6 +133,14 @@ export function StudentsTable() {
         <BulkActionBar ids={[...selected]} rows={rows} onClear={() => setSelected(new Set())} />
       )}
 
+      {/* Данные предыдущей выборки остаются на экране, пока едет новая (keepPreviousData) —
+          тонкая полоса вместо полного скелетона сообщает, что идёт обновление. */}
+      {students.isPlaceholderData && (
+        <div className="h-0.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
+        </div>
+      )}
+
       {students.isPending ? (
         <div className="h-96 animate-pulse rounded-3xl bg-muted/40" />
       ) : students.isError ? (

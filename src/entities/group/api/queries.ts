@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { apiClient, qk } from "@/shared/api";
 import type { GroupDetail, GroupsList } from "../model/types";
 
@@ -14,6 +14,10 @@ export function groupsQueryOptions(status: string, language: string) {
       const qs = params.toString();
       return apiClient.get<GroupsList>(`/groups${qs ? `?${qs}` : ""}`);
     },
+    // Список групп используется и как источник опций для селектов (страница
+    // учеников): при смене фильтра не мигаем в пустое состояние.
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 }
 
