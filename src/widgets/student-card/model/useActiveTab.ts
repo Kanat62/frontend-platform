@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router";
 
 /** Активная вкладка карточки — в URL (`?tab=`), не в `useState` (FRONTEND.md §8.1, §9). */
-export const TABS = ["Обзор", "Обучение", "Практика", "Прогресс", "Заметки", "Оплата"] as const;
+export const TABS = ["Обзор", "Обучение", "Практика", "Прогресс", "Заметки"] as const;
 export type StudentCardTab = (typeof TABS)[number];
 
 export function useActiveTab(): [StudentCardTab, (tab: StudentCardTab) => void] {

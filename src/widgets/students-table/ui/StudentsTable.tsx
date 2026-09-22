@@ -4,7 +4,7 @@ import { Plus, Search, Users } from "lucide-react";
 import { PAGE_SIZE, paths } from "@/shared/config";
 import { formatFull } from "@/shared/lib";
 import { EmptyState, Pill, ProgressBar, Select } from "@/shared/ui";
-import { AccessPill, PaymentPill, StudentAvatar } from "@/entities/student";
+import { AccessPill, StudentAvatar } from "@/entities/student";
 import { useGroupsQuery } from "@/entities/group";
 import { useTeacherOptionsQuery } from "@/entities/teacher";
 import { useStudentsQuery } from "@/entities/student";
@@ -169,7 +169,6 @@ export function StudentsTable() {
                   <th className="px-3 py-3">Конец курса</th>
                   <th className="px-3 py-3">Урок</th>
                   <th className="px-3 py-3">Прогресс</th>
-                  <th className="px-3 py-3">Оплата</th>
                   <th className="px-3 py-3">Посл. активность</th>
                   <th className="px-3 py-3">Статус</th>
                 </tr>
@@ -209,17 +208,6 @@ export function StudentsTable() {
                         <span className="text-xs font-bold">{s.progressPct}%</span>
                       </div>
                     </td>
-                    <td className="px-3 py-3">
-                      <div className="flex flex-col items-start gap-1">
-                        <PaymentPill status={s.payment.status} />
-                        {s.payment.status !== "full" && (
-                          <span className="text-[11px] font-semibold text-muted-foreground">
-                            {s.payment.total ? Math.round((s.payment.paid / s.payment.total) * 100) : 0}% ·{" "}
-                            {s.payment.paid.toLocaleString("ru")} {s.payment.currency}
-                          </span>
-                        )}
-                      </div>
-                    </td>
                     <td className="px-3 py-3 text-xs text-muted-foreground">{formatFull(s.lastActivity)}</td>
                     <td className="px-3 py-3">
                       <AccessPill status={s.accessStatus} />
@@ -254,7 +242,6 @@ export function StudentsTable() {
                     <ProgressBar value={s.progressPct} className="mt-2 h-1.5" />
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <AccessPill status={s.accessStatus} />
-                      <PaymentPill status={s.payment.status} />
                     </div>
                   </div>
                 </Link>

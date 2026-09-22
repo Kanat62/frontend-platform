@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/shared/lib";
 
 // Порт english-flow/src/components/shared.tsx (Pill). Доменные обёртки
-// (AccessPill, LessonStatePill, PaymentPill, GroupStatusPill, TeacherStatusPill,
+// (AccessPill, LessonStatePill, GroupStatusPill, TeacherStatusPill,
 // MeetingPill, LangPill) живут в entities/*/ui и используют этот компонент.
 
 export type PillTone = "neutral" | "primary" | "success" | "warning" | "danger";

@@ -1,7 +1,6 @@
-import type { AccessStatus, CourseType, Dto, LanguageCode, PaymentStatus, StudentFilters } from "@/shared/api";
+import type { AccessStatus, CourseType, Dto, LanguageCode, StudentFilters } from "@/shared/api";
 
-export type { AccessStatus, CourseType, LanguageCode, PaymentStatus, StudentFilters };
-export type PaymentInfo = Dto<"PaymentInfoDto">;
+export type { AccessStatus, CourseType, LanguageCode, StudentFilters };
 export type StudentListItem = Dto<"StudentListItemDto">;
 export type StudentsList = Dto<"StudentsListDto">;
 export type StudentHeader = Dto<"StudentHeaderDto">;

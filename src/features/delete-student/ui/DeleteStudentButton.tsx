@@ -26,7 +26,7 @@ export function DeleteStudentButton({ studentId, name }: { studentId: string; na
   return (
     <ConfirmDialog
       title="Удалить ученика?"
-      description={`«${name}», весь его прогресс, попытки тестов, оплата и практики будут удалены безвозвратно.`}
+      description={`«${name}», весь его прогресс, попытки тестов и практики будут удалены безвозвратно.`}
       confirmLabel="Удалить ученика"
       onConfirm={() => del.mutateAsync()}
       trigger={(open) => (

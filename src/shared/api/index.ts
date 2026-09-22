@@ -21,7 +21,6 @@ export type {
   TestLockedReason,
   GroupStatus,
   TeacherStatus,
-  PaymentStatus,
   TestStatus,
   MeetingScope,
 } from "./schema";

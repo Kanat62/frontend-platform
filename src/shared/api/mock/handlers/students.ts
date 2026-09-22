@@ -40,18 +40,6 @@ import {
  * `db.lessons`/`db.tests`.
  */
 
-function paymentInfo(student: Student, currency: string): Dto<"PaymentInfoDto"> {
-  const p = student.payment;
-  return {
-    status: p.status,
-    paid: p.paid,
-    total: p.totalCost,
-    currency,
-    remaining: Math.max(0, p.totalCost - p.paid),
-    purchaseDate: p.purchaseDate,
-  };
-}
-
 function studentListItem(student: Student): Dto<"StudentListItemDto"> {
   const productId = productIdOfStudent(student);
   const product = productById(productId);
@@ -74,7 +62,6 @@ function studentListItem(student: Student): Dto<"StudentListItemDto"> {
     currentLessonOrder: currentLessonOrder(student, lessons),
     lessonsTotal: lessons.length,
     progressPct: progressOf(student, lessons),
-    payment: paymentInfo(student, product?.currency ?? "сом"),
     lastActivity: student.lastActivity,
     accessStatus: effectiveAccessStatus(student),
   };
@@ -156,8 +143,6 @@ export const studentsHandlers: HttpHandler[] = [
     const start = group ? group.startDate : body.startDate;
     const end = new Date(start);
     end.setMonth(end.getMonth() + product.durationMonths);
-    const total = body.total ?? product.price;
-    const paid = body.paid ?? 0;
     // Пароль приходит с формы (клиентский предпросмотр, как в референсе); если по
     // какой-то причине пуст — генерируем на сервере, чтобы учётка не осталась без пароля.
     const password = body.password?.trim() || generatePassword(new Set(db.students.map((s) => s.password)));
@@ -186,12 +171,6 @@ export const studentsHandlers: HttpHandler[] = [
       avatarTone: "var(--tone-3)",
       onboarded: false,
       managerName: body.manager || "—",
-      payment: {
-        totalCost: total,
-        paid,
-        purchaseDate: TODAY,
-        status: paid >= total ? "full" : paid > 0 ? "partial" : "unpaid",
-      },
     };
     db.students.unshift(student);
 
@@ -238,7 +217,6 @@ export const studentsHandlers: HttpHandler[] = [
       productCurrency: product.currency,
       startDate: student.startDate,
       endDate: student.endDate,
-      payment: paymentInfo(student, product.currency),
       group: group ? { id: group.id, name: group.name } : null,
       groupRequired: student.type === "GROUP",
       teacherName: teacher?.name ?? null,
@@ -355,15 +333,6 @@ export const studentsHandlers: HttpHandler[] = [
     if (body.age !== undefined) student.age = body.age;
     if (body.managerName !== undefined) student.managerName = body.managerName;
     if (body.onboarded !== undefined) student.onboarded = body.onboarded;
-    if (body.payment) {
-      const { total, paid } = body.payment;
-      student.payment = {
-        ...student.payment,
-        totalCost: total,
-        paid,
-        status: paid >= total ? "full" : paid > 0 ? "partial" : "unpaid",
-      };
-    }
     return HttpResponse.json(studentHeader(student));
   }),
 

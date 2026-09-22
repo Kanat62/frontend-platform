@@ -11,7 +11,7 @@ function csvCell(value: string | number): string {
 }
 
 export function exportStudentsCsv(rows: StudentListItem[]): void {
-  const header = "Name,Login,Phone,Course,Type,Group,StartDate,EndDate,Status,Paid,Total,Payment";
+  const header = "Name,Login,Phone,Course,Type,Group,StartDate,EndDate,Status";
   const body = rows
     .map((s) =>
       [
@@ -24,9 +24,6 @@ export function exportStudentsCsv(rows: StudentListItem[]): void {
         s.startDate,
         s.endDate,
         s.accessStatus,
-        s.payment.paid,
-        s.payment.total,
-        s.payment.status,
       ]
         .map(csvCell)
         .join(","),

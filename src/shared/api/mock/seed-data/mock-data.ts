@@ -20,7 +20,6 @@ export type AttemptStatus = "in_progress" | "submitted";
 export type LanguageCode = "en" | "ru";
 export type GroupStatus = "recruiting" | "active" | "finished" | "archived";
 export type TeacherStatus = "active" | "absent" | "replacement";
-export type PaymentStatus = "full" | "partial" | "unpaid";
 
 export interface Language {
   code: LanguageCode;
@@ -72,13 +71,6 @@ export interface Group {
   /** Общий текущий учебный этап группы (order урока её продукта). Прогресс ученика — отдельно. */
   currentLesson: number;
   meetUrl: string;
-}
-
-export interface PaymentInfo {
-  totalCost: number;
-  paid: number;
-  purchaseDate: string;
-  status: PaymentStatus;
 }
 
 export interface Lesson {
@@ -191,7 +183,6 @@ export interface Student {
   avatarTone: string;
   onboarded: boolean;
   managerName: string;
-  payment: PaymentInfo;
 }
 
 /* ---------- программа: темы группового и индивидуального курса ---------- */
@@ -541,15 +532,6 @@ export const GROUPS: Group[] = assignGroupCodes([
 
 /* ---------- ученики ---------- */
 
-function payment(total: number, paid: number, purchaseDate: string): PaymentInfo {
-  return {
-    totalCost: total,
-    paid,
-    purchaseDate,
-    status: paid >= total ? "full" : paid > 0 ? "partial" : "unpaid",
-  };
-}
-
 const CITIES = ["Бишкек", "Ош", "Джалал-Абад", "Каракол", "Токмок", "Нарын", "Талас", "Баткен"];
 const FIRST_NAMES = ["Айгерим", "Нурбек", "Азиз", "Салтанат", "Тимур", "Жамиля", "Эрлан", "Гулназ", "Максат", "Асель", "Бакыт", "Динара", "Руслан", "Чолпон", "Данияр", "Айпери", "Кубат", "Мээрим", "Улан", "Назгуль"];
 const LAST_NAMES = ["Абдиев", "Токтосунова", "Мамытов", "Исакова", "Орозов", "Бекова", "Сыдыков", "Алиева", "Жумабаев", "Турсунова", "Касымов", "Эргешова", "Досов", "Бейшеналиева", "Уметалиев", "Кадырова"];
@@ -565,7 +547,7 @@ const HAND_STUDENTS: Student[] = [
     completed: [lessonId("en-group-6mo", 1), lessonId("en-group-6mo", 2)],
     completedAt: { [lessonId("en-group-6mo", 1)]: "2026-08-18", [lessonId("en-group-6mo", 2)]: "2026-08-20" },
     watched: { [lessonId("en-group-6mo", 3)]: 40 }, lastActivity: "2026-08-18", avatarTone: "var(--tone-1)", onboarded: true,
-    managerName: "Нурбол", payment: payment(15000, 15000, "2026-08-10"),
+    managerName: "Нурбол",
   },
   {
     id: "s2", login: "alina", password: "test123", firstName: "Алина", lastName: "Ким",
@@ -579,7 +561,7 @@ const HAND_STUDENTS: Student[] = [
       [lessonId("en-group-6mo", 3)]: "2026-08-21",
     },
     watched: {}, lastActivity: "2026-08-17", avatarTone: "var(--tone-2)", onboarded: true,
-    managerName: "Нурбол", payment: payment(15000, 7500, "2026-08-11"),
+    managerName: "Нурбол",
   },
   {
     id: "s3", login: "aibek", password: "test123", firstName: "Айбек", lastName: "Сатыбалдиев",
@@ -589,7 +571,7 @@ const HAND_STUDENTS: Student[] = [
     completed: [1, 2, 3, 4, 5, 6].map((o) => lessonId("en-individual-1mo", o)),
     completedAt: { [lessonId("en-individual-1mo", 1)]: "2026-08-05" },
     watched: { [lessonId("en-individual-1mo", 7)]: 60 }, lastActivity: "2026-08-18", avatarTone: "var(--tone-3)", onboarded: true,
-    managerName: "Нурбол", payment: payment(20000, 20000, "2026-08-01"),
+    managerName: "Нурбол",
   },
   {
     id: "s4", login: "nurai", password: "test123", firstName: "Нурай", lastName: "Асанова",
@@ -598,7 +580,7 @@ const HAND_STUDENTS: Student[] = [
     status: "expired", openedUpTo: 54,
     completed: Array.from({ length: 40 }, (_, i) => lessonId("en-group-6mo", i + 1)),
     completedAt: {}, watched: {}, lastActivity: "2026-08-09", avatarTone: "var(--tone-4)", onboarded: true,
-    managerName: "Азамат", payment: payment(15000, 15000, "2026-05-02"),
+    managerName: "Азамат",
   },
   {
     id: "s5", login: "elmira", password: "test123", firstName: "Эльмира", lastName: "Джолдошева",
@@ -606,7 +588,7 @@ const HAND_STUDENTS: Student[] = [
     groupId: null, teacherId: "t4", startDate: "2026-08-12", endDate: "2026-09-12",
     status: "disabled", openedUpTo: 1, completed: [], completedAt: {}, watched: {},
     lastActivity: "2026-08-14", avatarTone: "var(--tone-5)", onboarded: false,
-    managerName: "Нурбол", payment: payment(20000, 5000, "2026-08-12"),
+    managerName: "Нурбол",
   },
 ];
 
@@ -637,7 +619,6 @@ function generateStudents(count: number): Student[] {
     const teacherId = isIndividual
       ? (TEACHERS.filter((t) => t.languages.includes(language))[i % 2]?.id ?? null)
       : (group?.teacherId ?? null);
-    const paid = i % 4 === 0 ? Math.round(product.price * 0.3) : product.price;
     out.push({
       id: `s${n}`,
       login: `student${n}`,
@@ -662,7 +643,6 @@ function generateStudents(count: number): Student[] {
       avatarTone: TONES[i % TONES.length]!,
       onboarded: i % 6 !== 0,
       managerName: ["Нурбол", "Азамат", "Салима"][i % 3]!,
-      payment: payment(product.price, paid, startDate),
     });
   }
   return out;

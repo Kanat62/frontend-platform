@@ -2,9 +2,7 @@ export type {
   AccessStatus,
   CourseType,
   LanguageCode,
-  PaymentStatus,
   StudentFilters,
-  PaymentInfo,
   StudentListItem,
   StudentsList,
   StudentHeader,
@@ -35,5 +33,4 @@ export {
   useStudentProgressQuery,
 } from "./api/queries";
 export { AccessPill } from "./ui/AccessPill";
-export { PaymentPill } from "./ui/PaymentPill";
 export { StudentAvatar } from "./ui/StudentAvatar";

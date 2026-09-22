@@ -40,8 +40,6 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
     type: "GROUP" as CourseType,
     startDate: TODAY,
     time: "20:00",
-    total: "",
-    paid: "",
     manager: "",
     groupChoice: "", // "" = авто-подбор на сервере
   });
@@ -116,8 +114,6 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
         practiceStart: f.time,
         groupId: f.type === "GROUP" ? f.groupChoice || null : null,
         manager: f.manager,
-        total: f.total ? Number(f.total) : null,
-        paid: f.paid ? Number(f.paid) : null,
       },
       {
         onSuccess: (res) => {
@@ -273,14 +269,6 @@ export function CreateStudentModal({ onClose }: { onClose: () => void }) {
               </span>
             </label>
           )}
-
-          <p className="mt-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            Оплата (со слов отдела продаж)
-          </p>
-          <div className="mt-2 grid gap-3 sm:grid-cols-2">
-            <input className={field} placeholder="Общая сумма" inputMode="numeric" value={f.total} onChange={(e) => setF({ ...f, total: e.target.value })} />
-            <input className={field} placeholder="Первоначальный платёж" inputMode="numeric" value={f.paid} onChange={(e) => setF({ ...f, paid: e.target.value })} />
-          </div>
 
           <div className="mt-6 flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border py-3 text-sm font-bold text-muted-foreground">

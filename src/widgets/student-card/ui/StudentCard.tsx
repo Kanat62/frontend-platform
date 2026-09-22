@@ -18,7 +18,6 @@ import { LearningTab } from "./LearningTab";
 import { PracticeTab } from "./PracticeTab";
 import { ProgressTab } from "./ProgressTab";
 import { NotesTab } from "./NotesTab";
-import { PaymentTab } from "./PaymentTab";
 
 // Порт StudentCard из curator.students.$id.tsx.
 export function StudentCard({ studentId }: { studentId: string }) {
@@ -75,7 +74,6 @@ export function StudentCard({ studentId }: { studentId: string }) {
           {tab === "Практика" && <PracticeTab studentId={studentId} />}
           {tab === "Прогресс" && <ProgressTab studentId={studentId} />}
           {tab === "Заметки" && <NotesTab studentId={studentId} />}
-          {tab === "Оплата" && <PaymentTab studentId={studentId} language={header.data.language} />}
         </>
       )}
     </div>

@@ -41,4 +41,3 @@ export type MeetingScope = "GROUP" | "INDIVIDUAL";
 export type TestLockedReason = "lesson_not_completed" | "not_published";
 export type GroupStatus = "recruiting" | "active" | "finished" | "archived";
 export type TeacherStatus = "active" | "absent" | "replacement";
-export type PaymentStatus = "full" | "partial" | "unpaid";

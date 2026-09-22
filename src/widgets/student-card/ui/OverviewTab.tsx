@@ -4,7 +4,7 @@ import { ArrowLeft, GraduationCap } from "lucide-react";
 import { paths } from "@/shared/config";
 import { formatFull } from "@/shared/lib";
 import { SectionTitle, Select } from "@/shared/ui";
-import { PaymentPill, useStudentOverviewQuery, type CourseType } from "@/entities/student";
+import { useStudentOverviewQuery, type CourseType } from "@/entities/student";
 import { useGroupsQuery } from "@/entities/group";
 import { useAssignStudentToGroupMutation } from "@/features/assign-student-to-group";
 import { StudentCredentials } from "@/features/reset-student-password";
@@ -54,20 +54,6 @@ export function OverviewTab({ studentId, language, type }: { studentId: string; 
               <span className="text-right font-bold">{v}</span>
             </div>
           ))}
-          <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <span className="text-muted-foreground">Оплата курса</span>
-            <div className="flex flex-col items-end gap-1">
-              <PaymentPill status={o.payment.status} />
-              <span className="text-xs font-bold">
-                {o.payment.paid.toLocaleString("ru")} / {o.payment.total.toLocaleString("ru")} {o.payment.currency}
-                {o.payment.status !== "full" && (
-                  <span className="ml-1 font-semibold text-muted-foreground">
-                    (осталось {o.payment.remaining.toLocaleString("ru")})
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
         </div>
       </section>
 

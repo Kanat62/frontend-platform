@@ -3,9 +3,9 @@ import { goto } from "./helpers";
 
 /**
  * Сценарий куратора — TЗ §13.2: войти → Обзор → создать ученика (авто
- * логин/пароль, автоподбор группы, оплата) → на экране группы открыть урок N
+ * логин/пароль, автоподбор группы) → на экране группы открыть урок N
  * → назначить преподавателя (проверка слота) → создать практику → отметить
- * `completed` → карточка ученика → заметка → оплата.
+ * `completed` → карточка ученика → заметка.
  *
  * mock-data.ts: g-en-0824 (EN-02, active, currentLesson=4, teacher t1,
  * активные ученики s1/s2) — для открытия урока. g-en-0914 (EN-04,
@@ -22,13 +22,13 @@ async function login(page: import("@playwright/test").Page) {
   await expect(page).toHaveURL("/curator");
 }
 
-test("curator golden path: create student -> open lesson -> assign teacher -> schedule + complete practice -> note -> payment", async ({
+test("curator golden path: create student -> open lesson -> assign teacher -> schedule + complete practice -> note", async ({
   page,
 }) => {
   await login(page);
   await expect(page.getByText("Добро пожаловать")).toBeVisible();
 
-  // --- Создать ученика: автологин/пароль, автоподбор группы, оплата со слов продаж. ---
+  // --- Создать ученика: автологин/пароль, автоподбор группы. ---
   await goto(page, "/curator/students");
   await page.getByRole("button", { name: /добавить ученика/i }).click();
 
@@ -40,8 +40,6 @@ test("curator golden path: create student -> open lesson -> assign teacher -> sc
   await createForm.getByPlaceholder("Фамилия").fill("Тестов");
   await createForm.getByPlaceholder("Телефон").fill("+996 700 000 001");
   // Язык/формат остаются по умолчанию (English, Group) -> групповое авто-подбор группы на сервере.
-  await createForm.getByPlaceholder("Общая сумма").fill("15000");
-  await createForm.getByPlaceholder("Первоначальный платёж").fill("5000");
   await createForm.getByRole("button", { name: "Создать", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "Ученик создан" })).toBeVisible();
@@ -90,11 +88,4 @@ test("curator golden path: create student -> open lesson -> assign teacher -> sc
   await page.getByRole("button", { name: /добавить заметку/i }).click();
   await expect(page.getByText("Заметка добавлена")).toBeVisible();
   await expect(page.getByText(noteText)).toBeVisible();
-
-  // --- Обновить оплату. ---
-  await page.getByRole("button", { name: "Оплата", exact: true }).click();
-  await page.getByLabel("Оплачено").fill("15000");
-  await page.getByLabel("Оплачено").blur();
-  await expect(page.getByText("Оплата обновлена")).toBeVisible();
-  await expect(page.getByText("Оплачено полностью")).toBeVisible();
 });

@@ -1373,9 +1373,6 @@ export interface components {
             questionId: string;
             optionIds: string[];
         };
-        CreateTestRequestDto: {
-            lessonId: string;
-        };
         TestLibraryItemDto: {
             productId: string;
             productTitle: string;
@@ -1422,6 +1419,9 @@ export interface components {
             status: "draft" | "published";
             questions: components["schemas"]["TestEditorQuestionDto"][];
         };
+        CreateTestRequestDto: {
+            lessonId: string;
+        };
         UpdateTestRequestDto: {
             title?: string;
             timeLimitSec?: number;
@@ -1437,15 +1437,6 @@ export interface components {
         UpdateOptionRequestDto: {
             text?: string;
             isCorrect?: boolean;
-        };
-        PaymentInfoDto: {
-            /** @enum {string} */
-            status: "full" | "partial" | "unpaid";
-            paid: number;
-            total: number;
-            currency: string;
-            remaining: number;
-            purchaseDate: string;
         };
         StudentListItemDto: {
             id: string;
@@ -1466,7 +1457,6 @@ export interface components {
             currentLessonOrder: number;
             lessonsTotal: number;
             progressPct: number;
-            payment: components["schemas"]["PaymentInfoDto"];
             lastActivity: string;
             /** @enum {string} */
             accessStatus: "active" | "expired" | "disabled";
@@ -1494,19 +1484,15 @@ export interface components {
             practiceStart: string;
             groupId: string | null;
             manager: string;
-            total: number | null;
-            paid: number | null;
         };
         CreateStudentResponseDto: {
             id: string;
             login: string;
             password: string;
             groupName: string | null;
-            /** @description Телефон ученика — для приветственного сообщения куратора (копируется отдельной кнопкой). */
             phone: string;
             /** @enum {string} */
             language: "en" | "ru";
-            /** @description Длительность курса в месяцах (из продукта зачисления) — для текста сообщения. */
             durationMonths: number;
         };
         BulkPatchDto: {
@@ -1562,7 +1548,6 @@ export interface components {
             productCurrency: string;
             startDate: string;
             endDate: string;
-            payment: components["schemas"]["PaymentInfoDto"];
             group: components["schemas"]["StudentOverviewGroupDto"] | null;
             groupRequired: boolean;
             teacherName: string | null;
@@ -1618,17 +1603,12 @@ export interface components {
             practiceTotal: number;
             streakDays: number;
         };
-        UpdateStudentPaymentDto: {
-            total: number;
-            paid: number;
-        };
         UpdateStudentRequestDto: {
             phone?: string;
             city?: string;
             age?: number | null;
             managerName?: string;
             onboarded?: boolean;
-            payment?: components["schemas"]["UpdateStudentPaymentDto"];
         };
         UpdateStudentAccessRequestDto: {
             /** @enum {string} */
