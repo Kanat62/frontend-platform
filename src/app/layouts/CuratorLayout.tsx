@@ -52,7 +52,9 @@ export function Component() {
   const visibleNav = nav.filter((item) => !item.mainOnly || isMain);
   const roleCaption = isMain
     ? "Главный куратор"
-    : `Куратор · ${curator.zone === "en" ? "English" : "Русский"}`;
+    : curator.zone
+      ? `Куратор · ${curator.zone === "en" ? "English" : "Русский"}`
+      : "Профиль куратора не настроен";
 
   const handleLogout = () => {
     logout.mutate(undefined, { onSettled: () => navigate(paths.login, { replace: true }) });
