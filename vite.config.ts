@@ -10,6 +10,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
  * работает одинаково на `localhost` и `127.0.0.1`, без CORS/SameSite-сюрпризов.
  * `/curator/dashboard` — единственный API-путь под `/curator`; остальное
  * `/curator/*` это SPA-маршруты, их проксировать нельзя.
+ *
+ * В проде тот же приём — через `vercel.json` (`rewrites`), т.к. фронт (Vercel)
+ * и бэк (Railway) на разных доменах: без прокси refresh-cookie — сторонняя для
+ * браузера и часть браузеров (Safari ITP, Chrome phase-out) её режет, из-за чего
+ * куратора разлогинивает при каждой перезагрузке. При добавлении нового корня
+ * сюда — продублировать в `vercel.json`, и наоборот.
  */
 const API_ROOTS = [
   "/auth",

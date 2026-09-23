@@ -1,4 +1,27 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/auth/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/auth/:path*" },
+    { "source": "/courses/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/courses/:path*" },
+    { "source": "/curator/dashboard", "destination": "https://backend-platform-production-2cfe.up.railway.app/curator/dashboard" },
+    { "source": "/curators/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/curators/:path*" },
+    { "source": "/curators", "destination": "https://backend-platform-production-2cfe.up.railway.app/curators" },
+    { "source": "/groups/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/groups/:path*" },
+    { "source": "/groups", "destination": "https://backend-platform-production-2cfe.up.railway.app/groups" },
+    { "source": "/me/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/me/:path*" },
+    { "source": "/me", "destination": "https://backend-platform-production-2cfe.up.railway.app/me" },
+    { "source": "/meetings/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/meetings/:path*" },
+    { "source": "/meetings", "destination": "https://backend-platform-production-2cfe.up.railway.app/meetings" },
+    { "source": "/notes/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/notes/:path*" },
+    { "source": "/options/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/options/:path*" },
+    { "source": "/questions/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/questions/:path*" },
+    { "source": "/students/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/students/:path*" },
+    { "source": "/students", "destination": "https://backend-platform-production-2cfe.up.railway.app/students" },
+    { "source": "/teachers/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/teachers/:path*" },
+    { "source": "/teachers", "destination": "https://backend-platform-production-2cfe.up.railway.app/teachers" },
+    { "source": "/tests/:path*", "destination": "https://backend-platform-production-2cfe.up.railway.app/tests/:path*" },
+    { "source": "/tests", "destination": "https://backend-platform-production-2cfe.up.railway.app/tests" },
+    { "source": "/health", "destination": "https://backend-platform-production-2cfe.up.railway.app/health" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
