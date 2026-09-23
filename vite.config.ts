@@ -15,6 +15,7 @@ const API_ROOTS = [
   "/auth",
   "/courses",
   "/curator/dashboard",
+  "/curators",
   "/groups",
   "/me",
   "/meetings",

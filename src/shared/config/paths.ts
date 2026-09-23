@@ -23,6 +23,8 @@ export const paths = {
     group: (id: string) => `/curator/groups/${id}`,
     teachers: "/curator/teachers",
     teacher: (id: string) => `/curator/teachers/${id}`,
+    curators: "/curator/curators",
+    curatorDetail: (id: string) => `/curator/curators/${id}`,
     schedule: "/curator/schedule",
     course: "/curator/course",
     courseProduct: (productId: string) => `/curator/course/${productId}`,

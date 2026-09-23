@@ -965,6 +965,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/curators/substitution/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CuratorsController_startSubstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/curators/substitution/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CuratorsController_endSubstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/curators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CuratorsController_list"];
+        put?: never;
+        post: operations["CuratorsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/curators/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CuratorsController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CuratorsController_update"];
+        trace?: never;
+    };
+    "/curators/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CuratorsController_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/curators/{id}/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CuratorsController_auditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -986,6 +1082,11 @@ export interface components {
         CuratorSelfDto: {
             id: string;
             name: string;
+            isMain: boolean;
+            /** @enum {string|null} */
+            zone: "en" | "ru" | null;
+            /** @enum {string|null} */
+            substitutionZone: "en" | "ru" | null;
         };
         AuthUserDto: {
             id: string;
@@ -1922,6 +2023,116 @@ export interface components {
         ScheduleGroupMeetingRequestDto: {
             date: string;
             meetUrl?: string;
+        };
+        StartSubstitutionRequestDto: {
+            /** @enum {string} */
+            zone: "en" | "ru";
+        };
+        CuratorListItemDto: {
+            id: string;
+            name: string;
+            login: string;
+            isMain: boolean;
+            /** @enum {string|null} */
+            zone: "en" | "ru" | null;
+            /** @enum {string|null} */
+            substitutionZone: "en" | "ru" | null;
+            disabled: boolean;
+            groupsCount: number;
+            studentsCount: number;
+            activeCount: number;
+            atRiskCount: number;
+        };
+        CuratorsSummaryDto: {
+            total: number;
+            active: number;
+            inSubstitution: number;
+        };
+        CuratorsListDto: {
+            items: components["schemas"]["CuratorListItemDto"][];
+            summary: components["schemas"]["CuratorsSummaryDto"];
+        };
+        CreateCuratorRequestDto: {
+            name: string;
+            login: string;
+            /** @description Если не указан — генерируется на сервере */
+            password?: string;
+            /** @enum {string} */
+            zone: "en" | "ru";
+        };
+        CreateCuratorResponseDto: {
+            id: string;
+            login: string;
+            password: string;
+            name: string;
+            /** @enum {string} */
+            zone: "en" | "ru";
+        };
+        CuratorStatsDto: {
+            groupsCount: number;
+            studentsCount: number;
+            activeCount: number;
+            atRiskCount: number;
+        };
+        CuratorGroupDto: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            language: "en" | "ru";
+            studentCount: number;
+        };
+        CuratorStudentDto: {
+            id: string;
+            firstName: string;
+            lastName: string;
+            avatarTone: string;
+            /** @enum {string} */
+            language: "en" | "ru";
+            /** @enum {string} */
+            accessStatus: "active" | "expired" | "disabled";
+        };
+        CuratorDetailDto: {
+            id: string;
+            name: string;
+            login: string;
+            isMain: boolean;
+            /** @enum {string|null} */
+            zone: "en" | "ru" | null;
+            /** @enum {string|null} */
+            substitutionZone: "en" | "ru" | null;
+            disabled: boolean;
+            stats: components["schemas"]["CuratorStatsDto"];
+            groups: components["schemas"]["CuratorGroupDto"][];
+            students: components["schemas"]["CuratorStudentDto"][];
+        };
+        UpdateCuratorRequestDto: {
+            name?: string;
+            /** @enum {string} */
+            zone?: "en" | "ru";
+            disabled?: boolean;
+        };
+        ResetCuratorPasswordResponseDto: {
+            login: string;
+            password: string;
+        };
+        AuditLogEntryDto: {
+            id: string;
+            actorUserId: string;
+            actorName: string;
+            action: string;
+            entityType: string;
+            entityId: string | null;
+            /** @enum {string|null} */
+            zone: "en" | "ru" | null;
+            wasSubstitution: boolean;
+            metadata: Record<string, never> | null;
+            createdAt: string;
+        };
+        AuditLogListDto: {
+            items: components["schemas"]["AuditLogEntryDto"][];
+            total: number;
+            page: number;
+            pageSize: number;
         };
     };
     responses: never;
@@ -3648,6 +3859,176 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScheduleMeetingDto"];
+                };
+            };
+        };
+    };
+    CuratorsController_startSubstitution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSubstitutionRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CuratorsController_endSubstitution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CuratorsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratorsListDto"];
+                };
+            };
+        };
+    };
+    CuratorsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCuratorRequestDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateCuratorResponseDto"];
+                };
+            };
+        };
+    };
+    CuratorsController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratorDetailDto"];
+                };
+            };
+        };
+    };
+    CuratorsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCuratorRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratorDetailDto"];
+                };
+            };
+        };
+    };
+    CuratorsController_resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetCuratorPasswordResponseDto"];
+                };
+            };
+        };
+    };
+    CuratorsController_auditLog: {
+        parameters: {
+            query?: {
+                page?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogListDto"];
                 };
             };
         };

@@ -1,6 +1,6 @@
 import { redirect } from "react-router";
 import { queryClient } from "@/app/queryClient";
-import { sessionQueryOptions, type Role } from "@/entities/session";
+import { isMainCurator, sessionQueryOptions, type Role } from "@/entities/session";
 import { paths } from "./paths";
 
 /** Куда вести пользователя с данной ролью — единая точка (FRONTEND.md §9). */
@@ -24,6 +24,25 @@ export function requireRole(role: Role) {
       return session;
     } catch (error) {
       if (error instanceof Response) throw error; // проброс redirect() выше
+      throw redirect(paths.login);
+    }
+  };
+}
+
+/**
+ * Loader для разделов, доступных только главному куратору (страница «Кураторы» —
+ * ТЗ «роли»). Требует роль curator (401/другая роль — как `requireRole`), затем
+ * дополнительно проверяет `isMain`; обычного куратора отправляет на его обзор.
+ */
+export function requireMainCurator() {
+  return async () => {
+    try {
+      const session = await queryClient.ensureQueryData(sessionQueryOptions());
+      if (session.role !== "curator") throw redirect(homeFor(session.role));
+      if (!isMainCurator(session)) throw redirect(paths.curator.overview);
+      return session;
+    } catch (error) {
+      if (error instanceof Response) throw error;
       throw redirect(paths.login);
     }
   };

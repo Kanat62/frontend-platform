@@ -1,7 +1,7 @@
 import { createBrowserRouter, type RouteObject } from "react-router";
 import { ErrorBoundary } from "@/app/providers";
 import { paths } from "./paths";
-import { requireGuest, requireRole } from "./guards";
+import { requireGuest, requireMainCurator, requireRole } from "./guards";
 
 /**
  * Дерево маршрутов — FRONTEND.md §9. Каждая страница — `lazy()` (route-level
@@ -48,6 +48,16 @@ const routes: RouteObject[] = [
       { path: "groups/:id", lazy: () => import("@/pages/curator/group-detail") },
       { path: "teachers", lazy: () => import("@/pages/curator/teachers") },
       { path: "teachers/:id", lazy: () => import("@/pages/curator/teacher-detail") },
+      {
+        path: "curators",
+        lazy: () => import("@/pages/curator/curators"),
+        loader: requireMainCurator(),
+      },
+      {
+        path: "curators/:id",
+        lazy: () => import("@/pages/curator/curator-detail"),
+        loader: requireMainCurator(),
+      },
       { path: "schedule", lazy: () => import("@/pages/curator/schedule") },
       { path: "course", lazy: () => import("@/pages/curator/course") },
       { path: "course/:productId", lazy: () => import("@/pages/curator/course-product") },

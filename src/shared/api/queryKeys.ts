@@ -67,4 +67,9 @@ export const qk = {
     videoLibrary: ["courses", "video-library"] as const,
   },
   curatorDashboard: ["curator", "dashboard"] as const,
+  curators: {
+    list: ["curators"] as const,
+    detail: (id: string) => ["curators", id] as const,
+    auditLog: (id: string, page: number) => ["curators", id, "audit-log", page] as const,
+  },
 } as const;

@@ -7,25 +7,29 @@ import {
   LayoutDashboard,
   LogOut,
   Presentation,
+  ShieldCheck,
   Users,
 } from "lucide-react";
-import { useSessionQuery } from "@/entities/session";
+import { isMainCurator, useSessionQuery } from "@/entities/session";
 import { useLogoutMutation } from "@/features/auth";
+import { StartSubstitutionButton } from "@/features/toggle-substitution";
 import { paths } from "@/shared/config";
 import { cn } from "@/shared/lib";
 import { Avatar, Logo } from "@/shared/ui";
+import { SubstitutionBanner } from "@/widgets/substitution-banner";
 // ThemeToggle временно не подключён — только светлая тема (см. ThemeEffect.tsx).
 
 // Порт english-flow/src/components/CuratorShell.tsx. Гвард роли — в loader
 // маршрута (app/router/guards.ts).
 
 const nav = [
-  { to: paths.curator.overview, label: "Обзор", icon: LayoutDashboard },
-  { to: paths.curator.students, label: "Ученики", icon: Users },
-  { to: paths.curator.groups, label: "Группы", icon: GraduationCap },
-  { to: paths.curator.teachers, label: "Преподаватели", icon: Presentation },
-  { to: paths.curator.schedule, label: "Расписание", icon: CalendarDays },
-  { to: paths.curator.course, label: "Курсы", icon: BookOpen },
+  { to: paths.curator.overview, label: "Обзор", icon: LayoutDashboard, mainOnly: false },
+  { to: paths.curator.students, label: "Ученики", icon: Users, mainOnly: false },
+  { to: paths.curator.groups, label: "Группы", icon: GraduationCap, mainOnly: false },
+  { to: paths.curator.teachers, label: "Преподаватели", icon: Presentation, mainOnly: true },
+  { to: paths.curator.curators, label: "Кураторы", icon: ShieldCheck, mainOnly: true },
+  { to: paths.curator.schedule, label: "Расписание", icon: CalendarDays, mainOnly: false },
+  { to: paths.curator.course, label: "Курсы", icon: BookOpen, mainOnly: true },
 ] as const;
 
 function isActive(pathname: string, to: string) {
@@ -44,6 +48,11 @@ export function Component() {
 
   if (!session?.curator) return <div className="min-h-screen bg-background" />;
   const curator = session.curator;
+  const isMain = isMainCurator(session);
+  const visibleNav = nav.filter((item) => !item.mainOnly || isMain);
+  const roleCaption = isMain
+    ? "Главный куратор"
+    : `Куратор · ${curator.zone === "en" ? "English" : "Русский"}`;
 
   const handleLogout = () => {
     logout.mutate(undefined, { onSettled: () => navigate(paths.login, { replace: true }) });
@@ -57,7 +66,7 @@ export function Component() {
           Кабинет куратора
         </span>
         <nav className="mt-6 flex flex-1 flex-col gap-1">
-          {nav.map((item) => (
+          {visibleNav.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -73,17 +82,18 @@ export function Component() {
             </Link>
           ))}
         </nav>
-        <div className="rounded-2xl bg-muted/70 p-3">
+        <div className="space-y-2 rounded-2xl bg-muted/70 p-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <Avatar name={curator.name} tone="var(--tone-2)" size="sm" />
             <div className="min-w-0">
               <p className="truncate text-sm font-bold">{curator.name}</p>
-              <p className="text-[11px] text-muted-foreground">Куратор · Преподаватель</p>
+              <p className="text-[11px] text-muted-foreground">{roleCaption}</p>
             </div>
           </div>
+          {!isMain && <StartSubstitutionButton />}
           <button
             onClick={handleLogout}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
           >
             <LogOut className="size-3.5" /> Выйти
           </button>
@@ -102,12 +112,13 @@ export function Component() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 lg:pl-64 lg:pr-6 lg:pt-8 lg:pb-12">
+        <SubstitutionBanner />
         <Outlet />
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur lg:hidden">
-        <div className="grid grid-cols-6">
-          {nav.map((item) => (
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${visibleNav.length}, minmax(0, 1fr))` }}>
+          {visibleNav.map((item) => (
             <Link
               key={item.to}
               to={item.to}

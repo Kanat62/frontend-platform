@@ -33,7 +33,10 @@ function buildAuthUser(userId: string): Dto<"AuthUserDto"> | null {
     return {
       id: db.curator.id,
       role: "curator",
-      curator: { id: db.curator.id, name: db.curator.name },
+      // Мок — один куратор-синглтон, всегда с полным доступом (аналог главного
+      // куратора); зоны/замещение — не смоделированы в MSW (best-effort, прод
+      // работает против настоящего бэкенда, см. ARCHITECTURE.md §2).
+      curator: { id: db.curator.id, name: db.curator.name, isMain: true, zone: null, substitutionZone: null },
     };
   }
   const student = db.students.find((s) => s.id === userId);
