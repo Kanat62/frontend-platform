@@ -153,6 +153,7 @@ export function weekPlan(
   meetings: Meeting[],
   week: string[],
   today: string = TODAY,
+  groupPracticeTime?: { start: string; end: string },
 ): WeekPlanDay[] {
   const currentOrder = currentLessonOrder(student, lessons);
   const lessonAt = (offset: number) =>
@@ -160,6 +161,8 @@ export function weekPlan(
   const groupRoom = meetings.find((m) => m.meetUrl)?.meetUrl;
   // Первая учебная неделя ученика: старт пришёлся на текущую неделю (или позже).
   const firstWeek = student.startDate >= (week[0] ?? student.startDate);
+  const defaultStart = groupPracticeTime?.start ?? "20:00";
+  const defaultEnd = groupPracticeTime?.end ?? "21:00";
 
   return week.map((date, i) => {
     const slot = PLAN_RHYTHM[i % PLAN_RHYTHM.length] ?? PLAN_RHYTHM[0]!;
@@ -189,14 +192,14 @@ export function weekPlan(
       : isPractice
         ? meeting
           ? `${meeting.startTime}–${meeting.endTime} · групповая`
-          : "21:00–22:00 · групповая"
+          : `${defaultStart}–${defaultEnd} · групповая`
         : // Пока урок (и его видео) не заведён — не показываем «Видео · N мин».
           lesson
           ? `Видео · ${Number.parseInt(lesson.duration, 10)} мин`
           : "";
 
     const room = isPractice && !practiceLocked ? (meeting?.meetUrl ?? groupRoom) : undefined;
-    const startTime = isPractice && !practiceLocked ? (meeting?.startTime ?? "21:00") : undefined;
+    const startTime = isPractice && !practiceLocked ? (meeting?.startTime ?? defaultStart) : undefined;
 
     return {
       date,

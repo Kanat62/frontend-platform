@@ -296,7 +296,9 @@ export const meHandlers: HttpHandler[] = [
     const tests = testsOfProduct(productId);
     const meetings = meetingsFor(db.meetings, student);
     const week = weekRangeOf(TODAY);
-    const days = weekPlan(student, lessons, tests, db.attempts, meetings, week);
+    const group = student.groupId ? db.groups.find((g) => g.id === student.groupId) : undefined;
+    const groupPracticeTime = group ? { start: group.practiceStart, end: group.practiceEnd } : undefined;
+    const days = weekPlan(student, lessons, tests, db.attempts, meetings, week, TODAY, groupPracticeTime);
     const response: Dto<"MeScheduleDayDto">[] = days;
     return HttpResponse.json(response);
   }),
