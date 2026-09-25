@@ -20,7 +20,7 @@ export {
   weekPlan,
   activityDatesFor,
   streakDays,
-  practiceStats,
+  practiceHistoryStats,
   testsStats,
   type DayAgendaItem,
   type WeekDayAgenda,

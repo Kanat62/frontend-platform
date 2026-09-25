@@ -1,10 +1,10 @@
 import { Video } from "lucide-react";
 import { formatDate } from "@/shared/lib";
 import { EmptyState } from "@/shared/ui";
-import { MeetingPill } from "@/entities/meeting";
+import { AttendanceStatusPill } from "@/entities/meeting";
 import { useStudentPracticeQuery } from "@/entities/student";
 
-// Порт вкладки «Практика» из curator.students.$id.tsx.
+// Порт вкладки «Практика» из curator.students.$id.tsx + журнал посещаемости (ТЗ §11).
 export function PracticeTab({ studentId }: { studentId: string }) {
   const practice = useStudentPracticeQuery(studentId);
 
@@ -23,13 +23,14 @@ export function PracticeTab({ studentId }: { studentId: string }) {
   const p = practice.data;
   const stats = [
     { label: "Всего практик", value: `${p.total}` },
-    { label: "Посещено", value: `${p.attended}` },
-    { label: "Ближайшая", value: p.nextMeetingDate ? formatDate(p.nextMeetingDate) : "—" },
+    { label: "Посетил", value: `${p.attended}` },
+    { label: "Пропустил", value: `${p.missed}` },
+    { label: "Посещаемость", value: `${p.attendanceRate}%` },
   ];
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((x) => (
           <div key={x.label} className="surface-card p-3 text-center">
             <p className="text-lg font-extrabold">{x.value}</p>
@@ -37,6 +38,9 @@ export function PracticeTab({ studentId }: { studentId: string }) {
           </div>
         ))}
       </div>
+      {p.nextMeetingDate && (
+        <p className="text-xs text-muted-foreground">Ближайшая практика: {formatDate(p.nextMeetingDate)}</p>
+      )}
       {p.meetings.length === 0 && <EmptyState icon={Video} title="Практик пока нет" />}
       {p.meetings.map((m) => (
         <div key={m.id} className="surface-card flex flex-wrap items-center gap-3 p-4">
@@ -45,22 +49,14 @@ export function PracticeTab({ studentId }: { studentId: string }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold">{m.title}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               {formatDate(m.date)} · {m.startTime}–{m.endTime}
-              {m.status === "completed" && ` · ${m.attended ? "присутствовал" : "не присутствовал"}`}
+              {m.groupName ? ` · ${m.groupName}` : ""}
+              {m.teacherName ? ` · ${m.teacherName}` : ""}
+              {m.markedAt ? ` · отметка в ${new Date(m.markedAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : ""}
             </p>
           </div>
-          {m.meetUrl && (
-            <a
-              href={m.meetUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg gradient-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
-            >
-              Meet
-            </a>
-          )}
-          <MeetingPill status={m.status} />
+          <AttendanceStatusPill status={m.myStatus} />
         </div>
       ))}
     </div>

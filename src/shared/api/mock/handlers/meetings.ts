@@ -52,6 +52,9 @@ export function meetingDto(meeting: Meeting): Dto<"ScheduleMeetingDto"> {
     scope: meeting.type,
     groupId: meeting.groupId,
     groupName: group?.name ?? null,
+    // MSW не моделирует практику на несколько групп (ТЗ §2, только в реальном бэке) — всегда одна.
+    groupIds: meeting.groupId ? [meeting.groupId] : [],
+    groupNames: group ? [group.name] : [],
     studentId: meeting.type === "INDIVIDUAL" ? meeting.studentId : null,
     studentName: student ? `${student.firstName} ${student.lastName}` : null,
     title: meeting.title,
@@ -60,6 +63,7 @@ export function meetingDto(meeting: Meeting): Dto<"ScheduleMeetingDto"> {
     endTime: meeting.endTime,
     meetUrl: meeting.meetUrl,
     status: meeting.status,
+    teacherId: teacherId ?? null,
     teacherName: teacher?.name ?? null,
     roster: meetingRoster(meeting),
   };

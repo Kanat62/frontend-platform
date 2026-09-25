@@ -59,6 +59,7 @@ const routes: RouteObject[] = [
         loader: requireMainCurator(),
       },
       { path: "schedule", lazy: () => import("@/pages/curator/schedule") },
+      { path: "schedule/:meetingId/journal", lazy: () => import("@/pages/curator/practice-journal") },
       { path: "course", lazy: () => import("@/pages/curator/course") },
       { path: "course/:productId", lazy: () => import("@/pages/curator/course-product") },
       { path: "course/:productId/:order", lazy: () => import("@/pages/curator/lesson-editor") },

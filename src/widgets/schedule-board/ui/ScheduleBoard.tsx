@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { CalendarDays, Plus, Video } from "lucide-react";
+import { Link } from "react-router";
+import { CalendarDays, NotebookText, Plus, Video } from "lucide-react";
 import { toast } from "sonner";
+import { paths } from "@/shared/config";
 import { ApiError, formatDate, weekdayFull } from "@/shared/lib";
 import { EmptyState, Pill, SectionTitle } from "@/shared/ui";
 import { MeetingPill, useMeetingsQuery, type MeetingStatus } from "@/entities/meeting";
@@ -85,7 +87,11 @@ export function ScheduleBoard() {
                               <Video className="size-5" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-extrabold">{m.groupName ?? m.studentName ?? m.title}</p>
+                              <p className="truncate text-sm font-extrabold">
+                                {m.groupNames.length > 1
+                                  ? m.groupNames.join(", ")
+                                  : (m.groupName ?? m.studentName ?? m.title)}
+                              </p>
                               <p className="truncate text-xs text-muted-foreground">
                                 {m.startTime}–{m.endTime} · {m.teacherName ?? "без преподавателя"}
                                 {m.scope === "GROUP" ? ` · ${m.roster.length} учеников` : ""}
@@ -95,6 +101,14 @@ export function ScheduleBoard() {
                               {m.scope === "GROUP" ? "Group" : "Individual"}
                             </Pill>
                             <MeetingPill status={m.status} />
+                            {m.scope === "GROUP" && (
+                              <Link
+                                to={paths.curator.practiceJournal(m.id)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-foreground hover:bg-muted"
+                              >
+                                <NotebookText className="size-3.5" /> Журнал
+                              </Link>
+                            )}
                             <select
                               value={m.status}
                               onChange={(e) => {

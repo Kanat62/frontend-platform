@@ -30,7 +30,7 @@ import {
   testAvailability,
   testForLesson,
   testsStats,
-  practiceStats,
+  practiceHistoryStats,
   watchedPctOf,
   weekAgenda,
   weekPlan,
@@ -310,7 +310,7 @@ export const meHandlers: HttpHandler[] = [
     const productId = productIdOfStudent(student);
     const tests = testsOfProduct(productId);
     const meetings = meetingsFor(db.meetings, student);
-    const practice = practiceStats(meetings);
+    const practice = practiceHistoryStats(meetings, student.id);
     const testsStatsResult = testsStats(student, tests, db.attempts);
 
     const response: Dto<"MeProfileDto"> = {

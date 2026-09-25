@@ -9,3 +9,12 @@ export type MeetingAttendee = Dto<"MeetingAttendeeDto">;
 export type CreateMeetingRequest = Dto<"CreateMeetingRequestDto">;
 export type UpdateMeetingRequest = Dto<"UpdateMeetingRequestDto">;
 export type MarkAttendanceRequest = Dto<"MarkAttendanceRequestDto">;
+
+// --- Журнал посещаемости практики ---------------------------------------
+/** Личная отметка ученика на практике. `not_marked` не хранится — вычисляется. */
+export type JournalStatus = Dto<"JournalEntryDto">["status"];
+export type JournalStats = Dto<"JournalStatsDto">;
+export type JournalEntry = Dto<"JournalEntryDto">;
+export type MeetingJournal = Dto<"MeetingJournalDto">;
+export type SetAttendanceStatusRequest = Dto<"SetAttendanceStatusRequestDto">;
+export type AttendanceLogEntry = Dto<"AttendanceLogEntryDto">;

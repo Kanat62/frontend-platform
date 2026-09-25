@@ -6,18 +6,21 @@ import { TODAY } from "@/shared/config";
 import { Select } from "@/shared/ui";
 import { useGroupsQuery } from "@/entities/group";
 import { useStudentsQuery } from "@/entities/student";
+import { useTeacherOptionsQuery } from "@/entities/teacher";
 import { useScheduleMeetingMutation } from "../model/useScheduleMeetingMutation";
 
 const field =
   "w-full rounded-xl border border-input bg-surface px-3 py-2.5 text-sm font-medium outline-none focus:border-primary";
 
 /**
- * Новая практика для общего расписания — группе или индивидуальному ученику
- * (FRONTEND.md §16, шаг 6: `schedule-meeting (individual)`). Практика конкретной
+ * Новая практика для общего расписания — одной/нескольким группам (один
+ * Google Meet на несколько групп, ТЗ «Журнал посещаемости практики» §2) или
+ * индивидуальному ученику (FRONTEND.md §16, шаг 6). Практика конкретной
  * группы со своего экрана — `ScheduleGroupMeetingForm` (без выбора группы).
  */
 export function ScheduleMeetingForm() {
   const groups = useGroupsQuery("all", "all");
+  const teachers = useTeacherOptionsQuery();
   const individuals = useStudentsQuery({
     q: "",
     language: "all",
@@ -30,7 +33,8 @@ export function ScheduleMeetingForm() {
   const schedule = useScheduleMeetingMutation();
 
   const [scope, setScope] = useState<"GROUP" | "INDIVIDUAL">("GROUP");
-  const [groupId, setGroupId] = useState("");
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [teacherId, setTeacherId] = useState("");
   const [studentId, setStudentId] = useState("");
   const [date, setDate] = useState(TODAY);
   const [start, setStart] = useState("19:00");
@@ -38,24 +42,46 @@ export function ScheduleMeetingForm() {
   const [url, setUrl] = useState("");
 
   const liveGroups = (groups.data?.items ?? []).filter((g) => g.status === "active" || g.status === "recruiting");
-  const selectedGroup = liveGroups.find((g) => g.id === groupId);
+  const selectedGroups = liveGroups.filter((g) => groupIds.includes(g.id));
+  const isMulti = groupIds.length > 1;
+
+  const toggleGroup = (id: string) => {
+    setGroupIds((prev) => {
+      if (prev.includes(id)) return prev.filter((g) => g !== id);
+      const language = liveGroups.find((g) => g.id === id)?.language;
+      // Группы одной практики — только одного языка (ТЗ §2): смена языка сбрасывает выбор.
+      const sameLanguage = prev.every((pid) => liveGroups.find((g) => g.id === pid)?.language === language);
+      return sameLanguage ? [...prev, id] : [id];
+    });
+  };
 
   const submit = () => {
     if (scope === "GROUP") {
-      if (!groupId) {
-        toast.error("Выберите группу");
+      if (groupIds.length === 0) {
+        toast.error("Выберите хотя бы одну группу");
         return;
       }
-      if (!url && !selectedGroup?.hasMeetUrl) {
+      if (isMulti && (!start || !end)) {
+        toast.error("Для практики на несколько групп укажите время явно");
+        return;
+      }
+      if (!url && !(groupIds.length === 1 && selectedGroups[0]?.hasMeetUrl)) {
         toast.error("Добавьте ссылку Google Meet (в группе или в форме)");
         return;
       }
       schedule.mutate(
-        { scope: "GROUP", groupId, date, meetUrl: url || undefined },
+        {
+          scope: "GROUP",
+          groupIds,
+          ...(teacherId ? { teacherId } : {}),
+          date,
+          ...(isMulti ? { startTime: start, endTime: end } : {}),
+          meetUrl: url || undefined,
+        },
         {
           onSuccess: () => {
             setUrl("");
-            toast.success("Практика назначена группе");
+            toast.success(groupIds.length > 1 ? "Практика назначена группам" : "Практика назначена группе");
           },
           onError: (error) => toast.error(error instanceof ApiError ? error.message : "Не удалось назначить практику"),
         },
@@ -102,14 +128,27 @@ export function ScheduleMeetingForm() {
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {scope === "GROUP" ? (
-          <Select
-            className="lg:col-span-2"
-            ariaLabel="Группа"
-            value={groupId}
-            onChange={setGroupId}
-            placeholder="Выберите группу"
-            options={liveGroups.map((g) => ({ value: g.id, label: g.name }))}
-          />
+          <div className="rounded-xl border border-input bg-surface p-2.5 lg:col-span-2">
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              Группы — можно несколько, если это один Google Meet
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {liveGroups.map((g) => (
+                <button
+                  type="button"
+                  key={g.id}
+                  onClick={() => toggleGroup(g.id)}
+                  className={`rounded-lg border px-2.5 py-1.5 text-xs font-bold transition ${
+                    groupIds.includes(g.id)
+                      ? "border-primary bg-primary-soft"
+                      : "border-border bg-surface text-muted-foreground"
+                  }`}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : (
           <Select
             className="lg:col-span-2"
@@ -124,7 +163,7 @@ export function ScheduleMeetingForm() {
           />
         )}
         <input type="date" className={field} value={date} onChange={(e) => setDate(e.target.value)} />
-        {scope === "INDIVIDUAL" && (
+        {(scope === "INDIVIDUAL" || isMulti) && (
           <div className="flex gap-2">
             <input type="time" className={field} value={start} onChange={(e) => setStart(e.target.value)} />
             <input type="time" className={field} value={end} onChange={(e) => setEnd(e.target.value)} />
@@ -136,6 +175,15 @@ export function ScheduleMeetingForm() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
+        {scope === "GROUP" && (
+          <Select
+            ariaLabel="Преподаватель"
+            value={teacherId}
+            onChange={setTeacherId}
+            placeholder="Преподаватель (по умолчанию — из группы)"
+            options={(teachers.data ?? []).map((t) => ({ value: t.id, label: t.name }))}
+          />
+        )}
       </div>
 
       <button
@@ -145,7 +193,7 @@ export function ScheduleMeetingForm() {
       >
         <Plus className="size-4" /> Создать практику
       </button>
-      {scope === "GROUP" && (
+      {scope === "GROUP" && !isMulti && (
         <p className="text-[11px] text-muted-foreground">
           Время берётся из настроек группы — вечерний слот не зашит в код.
         </p>

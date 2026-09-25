@@ -949,6 +949,70 @@ export interface paths {
         patch: operations["MeetingsController_markAttendance"];
         trace?: never;
     };
+    "/meetings/{id}/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeetingsController_journal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/meetings/{id}/journal/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["MeetingsController_setAttendanceStatus"];
+        trace?: never;
+    };
+    "/meetings/{id}/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeetingsController_auditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/practice/{id}/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MePracticeController_checkIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/groups/{id}/meetings": {
         parameters: {
             query?: never;
@@ -1388,6 +1452,9 @@ export interface components {
             startTime?: string;
             lessonOrder?: number;
             blurNotice?: string;
+            meetingId?: string;
+            /** @enum {string} */
+            attendanceStatus?: "not_marked" | "checked_in" | "confirmed" | "rejected";
         };
         MeProfileDto: {
             firstName: string;
@@ -1686,11 +1753,17 @@ export interface components {
             meetUrl: string;
             /** @enum {string} */
             status: "scheduled" | "completed" | "cancelled";
-            attended?: boolean;
+            groupName: string | null;
+            teacherName: string | null;
+            /** @enum {string} */
+            myStatus: "not_marked" | "checked_in" | "confirmed" | "rejected";
+            markedAt: string | null;
         };
         StudentPracticeDto: {
             total: number;
             attended: number;
+            missed: number;
+            attendanceRate: number;
             nextMeetingDate?: string;
             meetings: components["schemas"]["StudentMeetingDto"][];
         };
@@ -1988,6 +2061,8 @@ export interface components {
             scope: "GROUP" | "INDIVIDUAL";
             groupId: string | null;
             groupName: string | null;
+            groupIds: string[];
+            groupNames: string[];
             studentId: string | null;
             studentName: string | null;
             title: string;
@@ -1997,14 +2072,18 @@ export interface components {
             meetUrl: string;
             /** @enum {string} */
             status: "scheduled" | "completed" | "cancelled";
+            teacherId: string | null;
             teacherName: string | null;
             roster: components["schemas"]["MeetingAttendeeDto"][];
         };
         CreateMeetingRequestDto: {
             /** @enum {string} */
             scope: "GROUP" | "INDIVIDUAL";
+            /** @deprecated */
             groupId?: string | null;
+            groupIds?: string[];
             studentId?: string | null;
+            teacherId?: string | null;
             date: string;
             startTime?: string;
             endTime?: string;
@@ -2019,6 +2098,45 @@ export interface components {
         MarkAttendanceRequestDto: {
             studentId: string;
             present: boolean;
+        };
+        JournalStatsDto: {
+            expected: number;
+            checkedIn: number;
+            confirmed: number;
+            rejected: number;
+            notMarked: number;
+            attendanceRate: number;
+        };
+        JournalEntryDto: {
+            studentId: string;
+            firstName: string;
+            lastName: string;
+            phone: string;
+            groupId: string | null;
+            groupName: string | null;
+            /** @enum {string} */
+            status: "not_marked" | "checked_in" | "confirmed" | "rejected";
+            /** @enum {string|null} */
+            method: "student_button" | "curator_manual" | null;
+            checkedInAt: string | null;
+            confirmedAt: string | null;
+            confirmedByName: string | null;
+        };
+        MeetingJournalDto: {
+            meeting: components["schemas"]["ScheduleMeetingDto"];
+            stats: components["schemas"]["JournalStatsDto"];
+            entries: components["schemas"]["JournalEntryDto"][];
+        };
+        SetAttendanceStatusRequestDto: {
+            /** @enum {string} */
+            status: "confirmed" | "rejected" | "not_marked";
+        };
+        AttendanceLogEntryDto: {
+            id: string;
+            actorName: string;
+            action: string;
+            metadata: Record<string, never> | null;
+            createdAt: string;
         };
         ScheduleGroupMeetingRequestDto: {
             date: string;
@@ -3834,6 +3952,102 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScheduleMeetingDto"];
+                };
+            };
+        };
+    };
+    MeetingsController_journal: {
+        parameters: {
+            query?: {
+                q?: string;
+                groupId?: string;
+                status?: "not_marked" | "checked_in" | "confirmed" | "rejected";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetingJournalDto"];
+                };
+            };
+        };
+    };
+    MeetingsController_setAttendanceStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAttendanceStatusRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetingJournalDto"];
+                };
+            };
+        };
+    };
+    MeetingsController_auditLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceLogEntryDto"][];
+                };
+            };
+        };
+    };
+    MePracticeController_checkIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "checked_in" | "confirmed" | "rejected";
+                    };
                 };
             };
         };

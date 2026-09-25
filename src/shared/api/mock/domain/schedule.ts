@@ -244,10 +244,19 @@ export function streakDays(dates: Set<string>, today: string = TODAY): number {
   return count;
 }
 
-export function practiceStats(meetings: Meeting[]): { total: number; attended: number } {
-  const finished = meetings.filter((m) => m.status !== "scheduled");
-  const attended = finished.filter((m) => m.status === "completed").length;
-  return { total: finished.length, attended };
+/** Порт `practiceHistoryStats` из backend/common/domain/attendance.ts — считает по личной отметке ученика. */
+export function practiceHistoryStats(
+  meetings: Meeting[],
+  studentId: string,
+): { total: number; attended: number; missed: number; attendanceRate: number } {
+  const finished = meetings.filter((m) => m.status === "completed");
+  const attended = finished.filter((m) => (m.attended ?? []).includes(studentId)).length;
+  return {
+    total: finished.length,
+    attended,
+    missed: finished.length - attended,
+    attendanceRate: finished.length > 0 ? Math.round((attended / finished.length) * 100) : 0,
+  };
 }
 
 export function testsStats(

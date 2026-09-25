@@ -24,7 +24,7 @@ import {
   levelForLesson,
   meetingsFor,
   monthOfLesson,
-  practiceStats,
+  practiceHistoryStats,
   progressOf,
   teacherOf,
   testsStats,
@@ -273,23 +273,34 @@ export const studentsHandlers: HttpHandler[] = [
     if (!student) return notFound("Ученик не найден");
 
     const meetings = meetingsFor(db.meetings, student);
-    const ps = practiceStats(meetings);
+    const ps = practiceHistoryStats(meetings, student.id);
     const nextMeeting = meetings.find((m) => m.status === "scheduled" && m.date >= TODAY);
 
     const response: Dto<"StudentPracticeDto"> = {
       total: ps.total,
       attended: ps.attended,
+      missed: ps.missed,
+      attendanceRate: ps.attendanceRate,
       ...(nextMeeting ? { nextMeetingDate: nextMeeting.date } : {}),
-      meetings: meetings.map((m) => ({
-        id: m.id,
-        title: m.title,
-        date: m.date,
-        startTime: m.startTime,
-        endTime: m.endTime,
-        meetUrl: m.meetUrl,
-        status: m.status,
-        ...(m.status === "completed" ? { attended: (m.attended ?? []).includes(student.id) } : {}),
-      })),
+      meetings: meetings.map((m) => {
+        const group = m.groupId ? db.groups.find((g) => g.id === m.groupId) : undefined;
+        const teacher = teacherOf(db.teachers, group ? group.teacherId : student.teacherId);
+        const attended = (m.attended ?? []).includes(student.id);
+        return {
+          id: m.id,
+          title: m.title,
+          date: m.date,
+          startTime: m.startTime,
+          endTime: m.endTime,
+          meetUrl: m.meetUrl,
+          status: m.status,
+          groupName: group?.name ?? null,
+          teacherName: teacher?.name ?? null,
+          // MSW не моделирует полный журнал (checked_in/rejected) — только бинарный `attended`.
+          myStatus: attended ? "confirmed" : "not_marked",
+          markedAt: null,
+        };
+      }),
     };
     return HttpResponse.json(response);
   }),
@@ -302,7 +313,7 @@ export const studentsHandlers: HttpHandler[] = [
 
     const productId = productIdOfStudent(student);
     const meetings = meetingsFor(db.meetings, student);
-    const ps = practiceStats(meetings);
+    const ps = practiceHistoryStats(meetings, student.id);
     const ts = testsStats(student, testsOfProduct(productId), db.attempts);
 
     const response: Dto<"StudentProgressDto"> = {

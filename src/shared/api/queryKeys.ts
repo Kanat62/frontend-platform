@@ -50,6 +50,9 @@ export const qk = {
   },
   meetings: {
     range: (range: string) => ["meetings", range] as const,
+    journal: (id: string, q: string, groupId: string, status: string) =>
+      ["meetings", id, "journal", q, groupId, status] as const,
+    log: (id: string) => ["meetings", id, "log"] as const,
   },
   lessons: {
     catalog: (productId: string) => ["lessons", productId, "catalog"] as const,

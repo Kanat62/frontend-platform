@@ -1,10 +1,13 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, Clock3, Coffee, FileText, Lock, PlayCircle, Video } from "lucide-react";
+import { toast } from "sonner";
+import { BookOpen, CheckCircle2, Clock3, Coffee, FileText, Lock, PlayCircle, Video } from "lucide-react";
 import type { ComponentType } from "react";
 import { paths } from "@/shared/config";
-import { cn, formatDate, weekdayShort } from "@/shared/lib";
+import { ApiError, cn, formatDate, weekdayShort } from "@/shared/lib";
 import type { Dto, WeekPlanKind, WeekPlanStatus } from "@/shared/api";
-import { usePracticeJoinWindow } from "@/entities/meeting";
+import { usePracticeJoinWindow, type JournalStatus } from "@/entities/meeting";
+import { useCheckInMutation } from "@/features/check-in-practice";
 
 // Порт DayRow/DayAction из english-flow/src/routes/practice.tsx.
 
@@ -123,7 +126,7 @@ const BTN =
 const BTN_HOVER = "hover:border-primary/40 hover:bg-muted";
 
 function DayAction({ day }: { day: WeekPlanDay }) {
-  const { status, kind, meetUrl, startTime, lessonOrder } = day;
+  const { status, kind, meetUrl, startTime, lessonOrder, meetingId, attendanceStatus } = day;
   const join = usePracticeJoinWindow(startTime);
 
   if (kind === "rest") return null;
@@ -131,16 +134,21 @@ function DayAction({ day }: { day: WeekPlanDay }) {
   const offClass = cn("cursor-not-allowed", status !== "locked" && "opacity-45");
 
   if (kind === "practice") {
+    const checkIn = status === "today" && meetingId ? <CheckInRow meetingId={meetingId} attendanceStatus={attendanceStatus} /> : null;
+
     if (status === "today" && meetUrl && join.open) {
       return (
-        <a
-          href={meetUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(BTN, "mt-3 border-transparent gradient-primary text-primary-foreground shadow-glow hover:opacity-95")}
-        >
-          <Video className="size-4" /> Подключиться к уроку
-        </a>
+        <>
+          <a
+            href={meetUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(BTN, "mt-3 border-transparent gradient-primary text-primary-foreground shadow-glow hover:opacity-95")}
+          >
+            <Video className="size-4" /> Подключиться к уроку
+          </a>
+          {checkIn}
+        </>
       );
     }
     if (status === "today" && meetUrl && join.countdown) {
@@ -152,13 +160,17 @@ function DayAction({ day }: { day: WeekPlanDay }) {
           <span className={cn(BTN, "cursor-not-allowed opacity-45 blur-[1px]")}>
             <Lock className="size-4" /> Подключиться к уроку
           </span>
+          {checkIn}
         </div>
       );
     }
     return (
-      <span className={cn(BTN, offClass, "mt-3")}>
-        <Video className="size-4" /> Подключиться к уроку
-      </span>
+      <>
+        <span className={cn(BTN, offClass, "mt-3")}>
+          <Video className="size-4" /> Подключиться к уроку
+        </span>
+        {checkIn}
+      </>
     );
   }
 
@@ -186,5 +198,43 @@ function DayAction({ day }: { day: WeekPlanDay }) {
         </>
       )}
     </div>
+  );
+}
+
+const STATUS_NOTE: Partial<Record<JournalStatus, string>> = {
+  checked_in: "Вы отметились — куратор скоро подтвердит",
+  confirmed: "Присутствие подтверждено",
+  rejected: "Отметка не подтверждена куратором",
+};
+
+/** Кнопка «Я на практике» (журнал посещаемости, ТЗ §3-4) — под ссылкой на Meet. */
+function CheckInRow({ meetingId, attendanceStatus }: { meetingId: string; attendanceStatus?: JournalStatus }) {
+  const checkIn = useCheckInMutation();
+  const [status, setStatus] = useState<JournalStatus | undefined>(attendanceStatus);
+
+  useEffect(() => setStatus(attendanceStatus), [attendanceStatus]);
+
+  if (status && status !== "not_marked") {
+    return (
+      <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+        <CheckCircle2 className="size-3.5 text-success" /> {STATUS_NOTE[status]}
+      </p>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={checkIn.isPending}
+      onClick={() =>
+        checkIn.mutate(meetingId, {
+          onSuccess: (data) => setStatus(data.status),
+          onError: (error) => toast.error(error instanceof ApiError ? error.message : "Не удалось отметиться"),
+        })
+      }
+      className={cn(BTN, BTN_HOVER, "mt-2 border-primary/40 text-primary disabled:opacity-60")}
+    >
+      <CheckCircle2 className="size-4" /> Я на практике
+    </button>
   );
 }
