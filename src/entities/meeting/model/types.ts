@@ -18,3 +18,7 @@ export type JournalEntry = Dto<"JournalEntryDto">;
 export type MeetingJournal = Dto<"MeetingJournalDto">;
 export type SetAttendanceStatusRequest = Dto<"SetAttendanceStatusRequestDto">;
 export type AttendanceLogEntry = Dto<"AttendanceLogEntryDto">;
+/** Единый журнал за день — сразу все групповые практики (куратор ведёт одну вкладку, а не журнал на группу). */
+export type DayJournalMeeting = Dto<"DayJournalMeetingDto">;
+export type DayJournalEntry = Dto<"DayJournalEntryDto">;
+export type DayJournal = Dto<"DayJournalDto">;

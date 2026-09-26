@@ -949,6 +949,22 @@ export interface paths {
         patch: operations["MeetingsController_markAttendance"];
         trace?: never;
     };
+    "/meetings/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeetingsController_todayJournal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meetings/{id}/journal": {
         parameters: {
             query?: never;
@@ -2137,6 +2153,26 @@ export interface components {
             action: string;
             metadata: Record<string, never> | null;
             createdAt: string;
+        };
+        DayJournalMeetingDto: {
+            id: string;
+            title: string;
+            groupIds: string[];
+            groupNames: string[];
+            startTime: string;
+            endTime: string;
+            teacherName: string | null;
+            meetUrl: string;
+        };
+        DayJournalEntryDto: components["schemas"]["JournalEntryDto"] & {
+            meetingId: string;
+            meetingTitle: string;
+        };
+        DayJournalDto: {
+            date: string;
+            meetings: components["schemas"]["DayJournalMeetingDto"][];
+            stats: components["schemas"]["JournalStatsDto"];
+            entries: components["schemas"]["DayJournalEntryDto"][];
         };
         ScheduleGroupMeetingRequestDto: {
             date: string;
@@ -3952,6 +3988,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScheduleMeetingDto"];
+                };
+            };
+        };
+    };
+    MeetingsController_todayJournal: {
+        parameters: {
+            query?: {
+                date?: string;
+                q?: string;
+                groupId?: string;
+                status?: "not_marked" | "checked_in" | "confirmed" | "rejected";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayJournalDto"];
                 };
             };
         };

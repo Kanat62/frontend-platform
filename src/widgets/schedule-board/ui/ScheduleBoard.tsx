@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router";
-import { CalendarDays, NotebookText, Plus, Video } from "lucide-react";
+import { CalendarDays, Plus, Video } from "lucide-react";
 import { toast } from "sonner";
-import { paths } from "@/shared/config";
 import { ApiError, formatDate, weekdayFull } from "@/shared/lib";
 import { EmptyState, Pill, SectionTitle } from "@/shared/ui";
 import { MeetingPill, useMeetingsQuery, type MeetingStatus } from "@/entities/meeting";
@@ -101,14 +99,6 @@ export function ScheduleBoard() {
                               {m.scope === "GROUP" ? "Group" : "Individual"}
                             </Pill>
                             <MeetingPill status={m.status} />
-                            {m.scope === "GROUP" && (
-                              <Link
-                                to={paths.curator.practiceJournal(m.id)}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-foreground hover:bg-muted"
-                              >
-                                <NotebookText className="size-3.5" /> Журнал
-                              </Link>
-                            )}
                             <select
                               value={m.status}
                               onChange={(e) => {

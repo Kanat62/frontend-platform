@@ -13,6 +13,9 @@ export type {
   MeetingJournal,
   SetAttendanceStatusRequest,
   AttendanceLogEntry,
+  DayJournalMeeting,
+  DayJournalEntry,
+  DayJournal,
 } from "./model/types";
 export {
   meetingsQueryOptions,
@@ -21,7 +24,10 @@ export {
   useMeetingJournalQuery,
   meetingAuditLogQueryOptions,
   useMeetingAuditLogQuery,
+  dayJournalQueryOptions,
+  useDayJournalQuery,
   type JournalFilters,
+  type DayJournalFilters,
 } from "./api/queries";
 export { MeetingPill } from "./ui/MeetingPill";
 export { AttendanceStatusPill } from "./ui/AttendanceStatusPill";

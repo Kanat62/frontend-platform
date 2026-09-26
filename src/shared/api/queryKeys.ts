@@ -53,6 +53,8 @@ export const qk = {
     journal: (id: string, q: string, groupId: string, status: string) =>
       ["meetings", id, "journal", q, groupId, status] as const,
     log: (id: string) => ["meetings", id, "log"] as const,
+    dayJournal: (date: string, q: string, groupId: string, status: string) =>
+      ["meetings", "journal", date, q, groupId, status] as const,
   },
   lessons: {
     catalog: (productId: string) => ["lessons", productId, "catalog"] as const,

@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import {
   BookOpen,
   CalendarDays,
+  ClipboardCheck,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -29,6 +30,7 @@ const nav = [
   { to: paths.curator.teachers, label: "Преподаватели", icon: Presentation, mainOnly: true },
   { to: paths.curator.curators, label: "Кураторы", icon: ShieldCheck, mainOnly: true },
   { to: paths.curator.schedule, label: "Расписание", icon: CalendarDays, mainOnly: false },
+  { to: paths.curator.journal, label: "Журнал", icon: ClipboardCheck, mainOnly: false },
   { to: paths.curator.course, label: "Курсы", icon: BookOpen, mainOnly: true },
 ] as const;
 
