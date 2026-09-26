@@ -38,6 +38,18 @@ export function daysLeft(endDate: string, from: string = TODAY): number {
   return Math.round(diff / 86_400_000);
 }
 
+/**
+ * Реальная сегодняшняя дата (`YYYY-MM-DD`, часовой пояс браузера) — в отличие
+ * от `TODAY`, который зашит под моки (TЗ §15.6) и не двигается. Для страниц,
+ * читающих настоящий бэкенд (журнал посещаемости и т.п.).
+ */
+export function todayISO(): string {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
 /** «18 августа». */
 export function formatDate(iso: string): string {
   const d = new Date(iso);

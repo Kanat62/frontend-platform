@@ -11,6 +11,7 @@ export {
   weekRangeOf,
   shiftWeek,
   formatDuration,
+  todayISO,
 } from "./date";
 export { transliterate, generateLogin, generatePassword } from "./credentials";
 export { ApiError, normalizeHttpError, type ApiErrorShape } from "./http-error";

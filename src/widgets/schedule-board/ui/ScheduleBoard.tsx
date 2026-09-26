@@ -15,7 +15,7 @@ export function ScheduleBoard() {
   const [showForm, setShowForm] = useState(false);
   const updateMeeting = useUpdateMeetingMutation();
 
-  const grouped = groupByDate(meetings.data ?? []);
+  const grouped = groupByDate(meetings.data ?? [], range === "past");
 
   return (
     <div className="space-y-5 rise-in">
@@ -147,8 +147,8 @@ export function ScheduleBoard() {
   );
 }
 
-function groupByDate<T extends { date: string }>(items: T[]): { date: string; items: T[] }[] {
-  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
+function groupByDate<T extends { date: string }>(items: T[], reverse = false): { date: string; items: T[] }[] {
+  const sorted = [...items].sort((a, b) => (reverse ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)));
   const dates = [...new Set(sorted.map((m) => m.date))];
   return dates.map((date) => ({ date, items: sorted.filter((m) => m.date === date) }));
 }

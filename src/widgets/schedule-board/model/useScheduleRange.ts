@@ -4,6 +4,7 @@ export const RANGES = [
   { value: "today", label: "Сегодня" },
   { value: "week", label: "Эта неделя" },
   { value: "next-week", label: "Следующая неделя" },
+  { value: "past", label: "Прошедшие" },
 ] as const;
 
 export type RangeValue = (typeof RANGES)[number]["value"];

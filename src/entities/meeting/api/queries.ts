@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { apiClient, qk } from "@/shared/api";
 import type { AttendanceLogEntry, DayJournal, JournalStatus, MeetingJournal, ScheduleMeeting } from "../model/types";
 
@@ -86,6 +86,9 @@ export function dayJournalQueryOptions(filters: DayJournalFilters) {
       return apiClient.get<DayJournal>(`/meetings/journal${qs ? `?${qs}` : ""}`);
     },
     refetchInterval: DAY_JOURNAL_POLL_MS,
+    // Поиск/фильтры меняют queryKey на каждое изменение — без этого страница
+    // на секунду показывала бы скелетон вместо плавного обновления списка.
+    placeholderData: keepPreviousData,
   });
 }
 

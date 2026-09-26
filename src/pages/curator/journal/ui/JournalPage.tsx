@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, Search, Users, Video } from "lucide-react";
+import { CalendarDays, Loader2, Search, Users, Video } from "lucide-react";
 import { toast } from "sonner";
-import { TODAY } from "@/shared/config";
-import { ApiError, useDebouncedValue } from "@/shared/lib";
+import { ApiError, todayISO, useDebouncedValue } from "@/shared/lib";
 import { EmptyState, SectionTitle } from "@/shared/ui";
 import { AttendanceStatusPill, useDayJournalQuery, type JournalStatus } from "@/entities/meeting";
 import { useSetAttendanceStatusMutation } from "@/features/attendance-journal";
@@ -26,7 +25,7 @@ function formatTime(iso: string): string {
  * на практике, независимо от группы.
  */
 export function JournalPage() {
-  const [date, setDate] = useState(TODAY);
+  const [date, setDate] = useState(todayISO);
   const [qDraft, setQDraft] = useState("");
   const q = useDebouncedValue(qDraft, 300);
   const [groupId, setGroupId] = useState("");
@@ -133,11 +132,14 @@ export function JournalPage() {
           <div className="flex flex-wrap gap-2">
             <div className="relative min-w-48 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              {journal.isFetching && (
+                <Loader2 className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
               <input
                 value={qDraft}
                 onChange={(e) => setQDraft(e.target.value)}
                 placeholder="Поиск: имя, фамилия, телефон"
-                className="w-full rounded-xl border border-input bg-surface py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
+                className="w-full rounded-xl border border-input bg-surface py-2.5 pr-9 pl-9 text-sm outline-none focus:border-primary"
               />
             </div>
             {groups.length > 1 && (
