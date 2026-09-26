@@ -14,12 +14,21 @@ beforeAll(async () => {
 });
 
 describe("GET /courses/products", () => {
-  it("lists the 6 EN/RU x Group-3mo/Group-6mo/Individual products with a level plan", async () => {
+  it("lists the 8 EN/RU x Group-2mo/Group-3mo/Group-6mo/Individual products with a level plan", async () => {
     const products = await apiClient.get<Dto<"CourseProductDto">[]>("/courses/products");
-    expect(products).toHaveLength(6);
+    expect(products).toHaveLength(8);
     expect(products.every((p) => p.levelPlan.length > 0)).toBe(true);
     expect(products.map((p) => p.id).sort()).toEqual(
-      ["en-group-3mo", "en-group-6mo", "en-individual-1mo", "ru-group-3mo", "ru-group-6mo", "ru-individual-1mo"].sort(),
+      [
+        "en-group-2mo",
+        "en-group-3mo",
+        "en-group-6mo",
+        "en-individual-1mo",
+        "ru-group-2mo",
+        "ru-group-3mo",
+        "ru-group-6mo",
+        "ru-individual-1mo",
+      ].sort(),
     );
   });
 });

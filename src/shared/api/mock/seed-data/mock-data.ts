@@ -286,8 +286,10 @@ function lessonsFor(
 export const LESSONS: Lesson[] = [
   ...lessonsFor("en-group-6mo", GROUP_TITLES),
   ...lessonsFor("en-group-3mo", GROUP_TITLES.slice(0, 27)),
+  ...lessonsFor("en-group-2mo", GROUP_TITLES.slice(0, 24)),
   ...lessonsFor("ru-group-6mo", GROUP_TITLES),
   ...lessonsFor("ru-group-3mo", GROUP_TITLES.slice(0, 27)),
+  ...lessonsFor("ru-group-2mo", GROUP_TITLES.slice(0, 24)),
   ...lessonsFor("en-individual-1mo", INDIVIDUAL_TITLES),
   ...lessonsFor("ru-individual-1mo", INDIVIDUAL_TITLES),
 ].map((lesson, i) => ({
@@ -347,6 +349,8 @@ const GROUP_6MO_LEVEL_PLAN: { month: number; level: CefrLevel }[] = [
 
 const GROUP_3MO_LEVEL_PLAN: { month: number; level: CefrLevel }[] = GROUP_6MO_LEVEL_PLAN.slice(0, 3);
 
+const GROUP_2MO_LEVEL_PLAN: { month: number; level: CefrLevel }[] = GROUP_6MO_LEVEL_PLAN.slice(0, 2);
+
 const INDIVIDUAL_LEVEL_PLAN: { month: number; level: CefrLevel }[] = [{ month: 1, level: "A1" }];
 
 const GROUP_FEATURES = ["Теория", "Тесты", "Повторение", "Групповая практика", "Преподаватель", "Google Meet"];
@@ -376,6 +380,17 @@ export const COURSE_PRODUCTS: CourseProduct[] = [
     levelPlan: GROUP_3MO_LEVEL_PLAN,
   },
   {
+    id: "en-group-2mo",
+    language: "en",
+    format: "GROUP",
+    title: "English Group · 2 месяца",
+    durationMonths: 2,
+    price: 6500,
+    currency: "сом",
+    features: GROUP_FEATURES,
+    levelPlan: GROUP_2MO_LEVEL_PLAN,
+  },
+  {
     id: "ru-group-6mo",
     language: "ru",
     format: "GROUP",
@@ -396,6 +411,17 @@ export const COURSE_PRODUCTS: CourseProduct[] = [
     currency: "сом",
     features: GROUP_FEATURES,
     levelPlan: GROUP_3MO_LEVEL_PLAN,
+  },
+  {
+    id: "ru-group-2mo",
+    language: "ru",
+    format: "GROUP",
+    title: "Russian Group · 2 месяца",
+    durationMonths: 2,
+    price: 5500,
+    currency: "сом",
+    features: GROUP_FEATURES,
+    levelPlan: GROUP_2MO_LEVEL_PLAN,
   },
   {
     id: "en-individual-1mo",

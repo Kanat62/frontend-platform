@@ -39,7 +39,7 @@ function groupSummary(group: Group): Dto<"GroupSummaryDto"> {
     name: group.name,
     language: group.language,
     courseProductId: group.courseProductId,
-    durationMonths: (productById(group.courseProductId)?.durationMonths ?? 6) as 3 | 6,
+    durationMonths: (productById(group.courseProductId)?.durationMonths ?? 6) as 2 | 3 | 6,
     status: group.status,
     startDate: group.startDate,
     endDate: group.endDate,
