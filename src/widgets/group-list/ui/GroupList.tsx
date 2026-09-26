@@ -8,6 +8,10 @@ import { GroupStatusPill, useGroupsQuery, type GroupSummary } from "@/entities/g
 import { CreateGroupModal } from "@/features/create-group";
 import { useGroupFilters } from "../model/useGroupFilters";
 
+function byCode(items: GroupSummary[]): GroupSummary[] {
+  return [...items].sort((a, b) => a.code.localeCompare(b.code));
+}
+
 // Порт GroupsPage из curator.groups.index.tsx.
 export function GroupList() {
   const [searchParams] = useSearchParams();
@@ -69,12 +73,16 @@ export function GroupList() {
       ) : groups.data.items.length === 0 ? (
         <EmptyState icon={GraduationCap} title="Групп не найдено" />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {groups.data.items.filter((g) => g.language === "ru").map((g) => <GroupCard key={g.id} group={g} />)}
+        <div className="grid items-start gap-3 md:grid-cols-2">
+          <div className="grid items-start gap-3 sm:grid-cols-2">
+            {byCode(groups.data.items.filter((g) => g.language === "ru")).map((g) => (
+              <GroupCard key={g.id} group={g} />
+            ))}
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {groups.data.items.filter((g) => g.language === "en").map((g) => <GroupCard key={g.id} group={g} />)}
+          <div className="grid items-start gap-3 sm:grid-cols-2">
+            {byCode(groups.data.items.filter((g) => g.language === "en")).map((g) => (
+              <GroupCard key={g.id} group={g} />
+            ))}
           </div>
         </div>
       )}
