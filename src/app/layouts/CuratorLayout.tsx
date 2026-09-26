@@ -62,6 +62,8 @@ export function Component() {
     logout.mutate(undefined, { onSettled: () => navigate(paths.login, { replace: true }) });
   };
 
+  const isGroupsList = pathname === paths.curator.groups;
+
   return (
     <div className="min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-surface px-4 py-6 lg:flex">
@@ -115,7 +117,12 @@ export function Component() {
         </button>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 lg:pl-64 lg:pr-6 lg:pt-8 lg:pb-12">
+      <main
+        className={cn(
+          "mx-auto w-full px-4 pb-28 pt-5 lg:pl-64 lg:pr-6 lg:pt-8 lg:pb-12",
+          isGroupsList ? "max-w-none" : "max-w-6xl",
+        )}
+      >
         <SubstitutionBanner />
         <Outlet />
       </main>

@@ -4,7 +4,7 @@ import { GraduationCap, Plus } from "lucide-react";
 import { paths } from "@/shared/config";
 import { pluralRu } from "@/shared/lib";
 import { Avatar, EmptyState, LangPill, Select } from "@/shared/ui";
-import { GroupStatusPill, useGroupsQuery } from "@/entities/group";
+import { GroupStatusPill, useGroupsQuery, type GroupSummary } from "@/entities/group";
 import { CreateGroupModal } from "@/features/create-group";
 import { useGroupFilters } from "../model/useGroupFilters";
 
@@ -70,52 +70,60 @@ export function GroupList() {
         <EmptyState icon={GraduationCap} title="Групп не найдено" />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {groups.data.items.map((g) => (
-            <Link
-              key={g.id}
-              to={paths.curator.group(g.id)}
-              className="surface-card min-w-0 space-y-3 p-4 transition hover:border-primary"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-extrabold">{g.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {g.startDate} → {g.endDate} · практика {g.practiceStart}–{g.practiceEnd}
-                  </p>
-                </div>
-                <GroupStatusPill status={g.status} />
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <LangPill code={g.language} />
-                <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-bold text-primary">
-                  {g.durationMonths} {pluralRu(g.durationMonths, "месяц", "месяца", "месяцев")}
-                </span>
-                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
-                  {g.studentCount} / {g.maxStudents} учеников
-                </span>
-                <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
-                  Month {g.month} · {g.level} · Lesson {g.lessonOrder}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                {g.teacherName ? (
-                  <>
-                    <Avatar name={g.teacherName} tone={g.teacherTone ?? undefined} size="sm" />
-                    <span className="font-bold">{g.teacherName}</span>
-                  </>
-                ) : (
-                  <span className="font-bold text-warning">⚠ Без преподавателя</span>
-                )}
-                {!g.hasMeetUrl && (g.status === "active" || g.status === "recruiting") && (
-                  <span className="font-bold text-warning">· ⚠ Без ссылки</span>
-                )}
-              </div>
-            </Link>
-          ))}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {groups.data.items.filter((g) => g.language === "ru").map((g) => <GroupCard key={g.id} group={g} />)}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {groups.data.items.filter((g) => g.language === "en").map((g) => <GroupCard key={g.id} group={g} />)}
+          </div>
         </div>
       )}
 
       {open && <CreateGroupModal onClose={() => setOpen(false)} />}
     </div>
+  );
+}
+
+function GroupCard({ group: g }: { group: GroupSummary }) {
+  return (
+    <Link
+      to={paths.curator.group(g.id)}
+      className="surface-card min-w-0 space-y-3 p-4 transition hover:border-primary"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-extrabold">{g.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {g.startDate} → {g.endDate} · практика {g.practiceStart}–{g.practiceEnd}
+          </p>
+        </div>
+        <GroupStatusPill status={g.status} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <LangPill code={g.language} />
+        <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-bold text-primary">
+          {g.durationMonths} {pluralRu(g.durationMonths, "месяц", "месяца", "месяцев")}
+        </span>
+        <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+          {g.studentCount} / {g.maxStudents} учеников
+        </span>
+        <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+          Month {g.month} · {g.level} · Lesson {g.lessonOrder}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        {g.teacherName ? (
+          <>
+            <Avatar name={g.teacherName} tone={g.teacherTone ?? undefined} size="sm" />
+            <span className="font-bold">{g.teacherName}</span>
+          </>
+        ) : (
+          <span className="font-bold text-warning">⚠ Без преподавателя</span>
+        )}
+        {!g.hasMeetUrl && (g.status === "active" || g.status === "recruiting") && (
+          <span className="font-bold text-warning">· ⚠ Без ссылки</span>
+        )}
+      </div>
+    </Link>
   );
 }
