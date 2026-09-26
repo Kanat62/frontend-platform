@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { ApiError } from "@/shared/lib";
-import { TODAY } from "@/shared/config";
+import { ApiError, todayISO } from "@/shared/lib";
 import { Select } from "@/shared/ui";
 import { useGroupsQuery } from "@/entities/group";
 import { useStudentsQuery } from "@/entities/student";
@@ -36,7 +35,7 @@ export function ScheduleMeetingForm() {
   const [groupIds, setGroupIds] = useState<string[]>([]);
   const [teacherId, setTeacherId] = useState("");
   const [studentId, setStudentId] = useState("");
-  const [date, setDate] = useState(TODAY);
+  const [date, setDate] = useState(todayISO);
   const [start, setStart] = useState("19:00");
   const [end, setEnd] = useState("20:00");
   const [url, setUrl] = useState("");
