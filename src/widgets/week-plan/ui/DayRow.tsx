@@ -33,13 +33,11 @@ export function DayRow({ day, first, last }: { day: WeekPlanDay; first: boolean;
   const s = day.status;
 
   const nodeClass =
-    s === "done"
-      ? "bg-success-soft text-success"
-      : s === "today"
-        ? "gradient-primary text-primary-foreground shadow-glow"
-        : s === "rest"
-          ? "border-2 border-dashed border-border bg-surface text-muted-foreground"
-          : "bg-muted text-muted-foreground";
+    s === "today"
+      ? "gradient-primary text-primary-foreground shadow-glow"
+      : s === "rest"
+        ? "border-2 border-dashed border-border bg-surface text-muted-foreground"
+        : "bg-muted text-muted-foreground";
 
   const cardClass =
     s === "today"

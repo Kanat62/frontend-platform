@@ -7,7 +7,6 @@ import { dayState, type DayKind, type DayMarkStatus } from "../model/dayState";
 // Порт WeekStrip/DayMark из english-flow/src/routes/dashboard.tsx.
 
 const DAY_TONE: Record<DayMarkStatus, string> = {
-  done: "bg-success-soft",
   absent: "bg-muted",
   today: "bg-surface",
   upcoming: "bg-surface",
@@ -17,8 +16,7 @@ const DAY_TONE: Record<DayMarkStatus, string> = {
 function DayMark({ kind, status }: { kind: DayKind; status: DayMarkStatus }) {
   if (status === "rest") return <Minus className="size-4 text-muted-foreground/30" />;
   const Icon = kind === "practice" ? Video : BookOpen;
-  const color =
-    status === "done" ? "text-success/70" : status === "today" ? "text-primary/70" : "text-muted-foreground/70";
+  const color = status === "today" ? "text-primary/70" : "text-muted-foreground/70";
   return <Icon className={`size-5 ${color}`} />;
 }
 
@@ -33,8 +31,8 @@ export function WeekStrip({
 }) {
   return (
     <div className="grid grid-cols-7 gap-1 sm:gap-2">
-      {week.map(({ date, items }, i) => {
-        const { kind, status } = dayState(date, items, i);
+      {week.map(({ date }, i) => {
+        const { kind, status } = dayState(date, i);
         const isToday = date === TODAY;
         return (
           <button
