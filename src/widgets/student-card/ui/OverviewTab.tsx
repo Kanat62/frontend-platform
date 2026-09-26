@@ -33,7 +33,7 @@ export function OverviewTab({ studentId, language, type }: { studentId: string; 
     ["Возраст", o.age ? String(o.age) : "—"],
     ["Город", o.city || "—"],
     ["Менеджер", o.managerName],
-    ["Продукт", `${o.productTitle} · ${o.productPrice.toLocaleString("ru")} ${o.productCurrency}`],
+    ["Продукт", o.productTitle],
     ["Начало курса", formatFull(o.startDate)],
     ["Конец курса", formatFull(o.endDate)],
   ];
