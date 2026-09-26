@@ -47,10 +47,23 @@ export function ScheduleMeetingForm() {
   const toggleGroup = (id: string) => {
     setGroupIds((prev) => {
       if (prev.includes(id)) return prev.filter((g) => g !== id);
-      const language = liveGroups.find((g) => g.id === id)?.language;
+      const group = liveGroups.find((g) => g.id === id);
       // Группы одной практики — только одного языка (ТЗ §2): смена языка сбрасывает выбор.
-      const sameLanguage = prev.every((pid) => liveGroups.find((g) => g.id === pid)?.language === language);
-      return sameLanguage ? [...prev, id] : [id];
+      const sameLanguage = prev.every((pid) => liveGroups.find((g) => g.id === pid)?.language === group?.language);
+      if (!sameLanguage) {
+        if (group) {
+          setStart(group.practiceStart);
+          setEnd(group.practiceEnd);
+        }
+        return [id];
+      }
+      // Первая выбранная группа задаёт время по умолчанию — вместо оторванной от
+      // реальных слотов заглушки (кураторы могли забывать поменять поле вручную).
+      if (prev.length === 0 && group) {
+        setStart(group.practiceStart);
+        setEnd(group.practiceEnd);
+      }
+      return [...prev, id];
     });
   };
 
