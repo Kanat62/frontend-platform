@@ -1467,7 +1467,6 @@ export interface components {
             meetUrl?: string;
             startTime?: string;
             lessonOrder?: number;
-            blurNotice?: string;
             meetingId?: string;
             /** @enum {string} */
             attendanceStatus?: "not_marked" | "checked_in" | "confirmed" | "rejected";

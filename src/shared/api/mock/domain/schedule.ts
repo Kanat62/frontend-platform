@@ -121,8 +121,6 @@ export interface WeekPlanDay {
   /** Время начала практики "HH:mm" — для окна подключения на клиенте. */
   startTime?: string;
   lessonOrder?: number;
-  /** Практика первой недели закрыта: текст оверлея поверх заблюренной карточки. */
-  blurNotice?: string;
 }
 
 const PLAN_RHYTHM: { kind: WeekPlanKind; offset: number }[] = [
@@ -159,8 +157,6 @@ export function weekPlan(
   const lessonAt = (offset: number) =>
     lessons.find((l) => l.order === currentOrder + offset) ?? lessons.find((l) => l.order === currentOrder);
   const groupRoom = meetings.find((m) => m.meetUrl)?.meetUrl;
-  // Первая учебная неделя ученика: старт пришёлся на текущую неделю (или позже).
-  const firstWeek = student.startDate >= (week[0] ?? student.startDate);
   const defaultStart = groupPracticeTime?.start ?? "20:00";
   const defaultEnd = groupPracticeTime?.end ?? "21:00";
 
@@ -171,14 +167,10 @@ export function weekPlan(
     const meeting = meetings.find((m) => m.date === date);
     const isRest = slot.kind === "rest";
     const isPractice = slot.kind === "practice";
-    // Практика первой недели закрыта: новому ученику сначала нужно освоиться с теорией.
-    const practiceLocked = isPractice && firstWeek;
 
     let status: WeekPlanStatus;
     if (isRest) {
       status = "rest";
-    } else if (practiceLocked) {
-      status = "locked";
     } else if (date < today) {
       status = dayAgenda(student, lessons, tests, attempts, meetings, date).length > 0 ? "done" : "past";
     } else if (date === today) {
@@ -198,8 +190,8 @@ export function weekPlan(
           ? `Видео · ${Number.parseInt(lesson.duration, 10)} мин`
           : "";
 
-    const room = isPractice && !practiceLocked ? (meeting?.meetUrl ?? groupRoom) : undefined;
-    const startTime = isPractice && !practiceLocked ? (meeting?.startTime ?? defaultStart) : undefined;
+    const room = isPractice ? (meeting?.meetUrl ?? groupRoom) : undefined;
+    const startTime = isPractice ? (meeting?.startTime ?? defaultStart) : undefined;
 
     return {
       date,
@@ -212,7 +204,6 @@ export function weekPlan(
       ...(room ? { meetUrl: room } : {}),
       ...(startTime ? { startTime } : {}),
       ...(!isRest && lesson ? { lessonOrder: lesson.order } : {}),
-      ...(practiceLocked ? { blurNotice: "Практика начнётся со следующей недели" } : {}),
     };
   });
 }
