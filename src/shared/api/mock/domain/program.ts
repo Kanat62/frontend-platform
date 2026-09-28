@@ -9,6 +9,7 @@ import type { CourseProduct, CourseStage, Lesson, Student } from "../seed-data/m
  */
 
 export function monthOfLesson(order: number, lessonCount: number, monthsTotal: number): number {
+  if (lessonCount === 0) return 1;
   const lessonsPerMonth = Math.ceil(lessonCount / monthsTotal);
   return Math.min(monthsTotal, Math.max(1, Math.ceil(order / lessonsPerMonth)));
 }
